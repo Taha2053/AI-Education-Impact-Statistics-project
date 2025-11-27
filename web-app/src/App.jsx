@@ -1,35 +1,39 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import theme from './theme/theme';
+import Layout from './components/Layout';
+import { DataProvider } from './context/DataContext';
+import Overview from './pages/Overview';
+
+import GlobalAnalysis from './pages/GlobalAnalysis';
+import Performance from './pages/Performance';
+import StudyHabits from './pages/StudyHabits';
+import AIInsights from './pages/AIInsights';
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [currentView, setCurrentView] = useState('overview');
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    const renderView = () => {
+        switch (currentView) {
+            case 'overview': return <Overview />;
+            case 'global': return <GlobalAnalysis />;
+            case 'performance': return <Performance />;
+            case 'habits': return <StudyHabits />;
+            case 'ai': return <AIInsights />;
+            default: return <Overview />;
+        }
+    };
+
+    return (
+        <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <DataProvider>
+                <Layout currentView={currentView} onViewChange={setCurrentView}>
+                    {renderView()}
+                </Layout>
+            </DataProvider>
+        </ThemeProvider>
+    );
 }
 
-export default App
+export default App;
