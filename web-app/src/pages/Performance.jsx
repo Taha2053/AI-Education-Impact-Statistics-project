@@ -50,10 +50,11 @@ export default function Performance() {
                         },
                         hovermode: 'closest',
                         legend: { orientation: 'h', y: 1.05 }
+                        
                     }}
                     useResizeHandler
                     style={{ width: '100%', height: '100%' }}
-                    config={{ displayModeBar: true }}
+                    config={{ displayModeBar: false }}
                 />
             </Paper>
         </Box>

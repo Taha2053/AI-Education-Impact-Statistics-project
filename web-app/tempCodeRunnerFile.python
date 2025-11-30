@@ -1,0 +1,17 @@
+t = int(input())
+for z in range(t):
+    n = int(input())
+    l = list(map(int, input().split()))
+    if l[-1]!=-1 and l[0]!=-1:
+        print(abs(l[-1]-l[0]))
+        L = [l[i] if l[i] != -1 else 0 for i in range(n)]
+        print(*L)
+    elif l[0]==-1:
+        print(0)
+        ind = len(l) - 1 - l[::-1].index(-1)
+        print(ind)
+        l[ind] = l[-1]
+        L = [l[i] if l[i] != -1 else 0 for i in range(n)]
+        print(*L)
+    
+
