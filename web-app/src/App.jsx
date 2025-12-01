@@ -8,6 +8,7 @@ import GlobalAnalysis from './pages/GlobalAnalysis';
 import Performance from './pages/Performance';
 import StudyHabits from './pages/StudyHabits';
 import AIInsights from './pages/AIInsights';
+import Assistance from './pages/Assistance';
 
 function App() {
     const [currentView, setCurrentView] = useState('overview');
@@ -19,6 +20,7 @@ function App() {
             case 'performance': return <Performance />;
             case 'habits': return <StudyHabits />;
             case 'ai': return <AIInsights />;
+            case 'assistance': return <Assistance />;
             // case "summary" : return <Overview />;
             default: return <Overview />;
         }
