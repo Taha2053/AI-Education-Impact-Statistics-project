@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, useTheme, useMediaQuery } from '@mui/material';
-import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit } from 'lucide-react';
+import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const drawerWidth = 260;
+const drawerWidth = 280;
 
 const MENU_ITEMS = [
     { text: 'Overview', icon: <LayoutDashboard size={20} />, id: 'overview' },
@@ -10,6 +11,7 @@ const MENU_ITEMS = [
     { text: 'Performance', icon: <BarChart2 size={20} />, id: 'performance' },
     { text: 'Study Habits', icon: <BookOpen size={20} />, id: 'habits' },
     { text: 'AI Insights', icon: <BrainCircuit size={20} />, id: 'ai' },
+    { text: 'Assistance', icon: <MessageSquare size={20} />, id: 'assistance' },
 ];
 
 export default function Layout({ children, currentView, onViewChange }) {
@@ -22,16 +24,40 @@ export default function Layout({ children, currentView, onViewChange }) {
     };
 
     const drawer = (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
-            <Toolbar sx={{ px: 3 }}>
-                <BrainCircuit size={28} color={theme.palette.primary.main} style={{ marginRight: 12 }} />
-                <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 700, background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`, backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    AI Study
-                </Typography>
-            </Toolbar>
-            <List sx={{ px: 2, py: 2 }}>
+        <Box sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: 'background.paper',
+            borderRight: '1px solid',
+            borderColor: 'divider',
+        }}>
+            {/* Logo Section */}
+            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    display: 'flex',
+                    boxShadow: '0 4px 12px rgba(150, 111, 255, 0.3)'
+                }}>
+                    <BrainCircuit size={24} />
+                </Box>
+                <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1 }}>
+                        AI Study
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        AI Education Impact Statistics
+                    </Typography>
+                </Box>
+            </Box>
+
+            {/* Navigation */}
+            <List sx={{ px: 2, py: 1, flexGrow: 1 }}>
                 {MENU_ITEMS.map((item) => (
-                    <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                    <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                         <ListItemButton
                             selected={currentView === item.id}
                             onClick={() => {
@@ -39,26 +65,38 @@ export default function Layout({ children, currentView, onViewChange }) {
                                 if (isMobile) setMobileOpen(false);
                             }}
                             sx={{
-                                borderRadius: 2,
+                                position: 'relative',
+                                overflow: 'hidden',
                                 '&.Mui-selected': {
-                                    bgcolor: 'primary.main',
-                                    color: 'primary.contrastText',
-                                    '&:hover': {
-                                        bgcolor: 'primary.dark',
-                                    },
-                                    '& .lucide': {
-                                        color: 'white',
-                                    }
-                                },
-                                '& .lucide': {
-                                    color: currentView === item.id ? 'white' : theme.palette.text.secondary,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                                 }
                             }}
                         >
                             <ListItemIcon sx={{ minWidth: 40 }}>
                                 {item.icon}
                             </ListItemIcon>
-                            <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: 500 }} />
+                            <ListItemText
+                                primary={item.text}
+                                primaryTypographyProps={{
+                                    fontWeight: currentView === item.id ? 600 : 500,
+                                    fontSize: '0.95rem'
+                                }}
+                            />
+                            {currentView === item.id && (
+                                <motion.div
+                                    layoutId="activeIndicator"
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: '10%',
+                                        bottom: '10%',
+                                        width: '3px',
+                                        backgroundColor: theme.palette.primary.main,
+                                        borderTopRightRadius: '4px',
+                                        borderBottomRightRadius: '4px',
+                                    }}
+                                />
+                            )}
                         </ListItemButton>
                     </ListItem>
                 ))}
@@ -73,27 +111,39 @@ export default function Layout({ children, currentView, onViewChange }) {
                 sx={{
                     width: { md: `calc(100% - ${drawerWidth}px)` },
                     ml: { md: `${drawerWidth}px` },
-                    bgcolor: 'background.default/80',
-                    backdropFilter: 'blur(8px)',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    bgcolor: 'rgba(23, 23, 23, 0.8)', // Glass effect
+                    backdropFilter: 'blur(12px)',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
                     boxShadow: 'none',
+                    zIndex: theme.zIndex.drawer + 1,
+                    transition: 'all 0.3s ease'
                 }}
             >
-                <Toolbar>
-                    <IconButton
-                        color="inherit"
-                        aria-label="open drawer"
-                        edge="start"
-                        onClick={handleDrawerToggle}
-                        sx={{ mr: 2, display: { md: 'none' } }}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography variant="h6" noWrap component="div" sx={{ color: 'text.primary' }}>
-                        {MENU_ITEMS.find(item => item.id === currentView)?.text || 'Dashboard'}
-                    </Typography>
+                <Toolbar sx={{ justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="start"
+                            onClick={handleDrawerToggle}
+                            sx={{ mr: 2, display: { md: 'none' } }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+
+                        {/* Breadcrumbs / Title */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
+                            <LayoutDashboard size={18} />
+                            <ChevronRight size={16} />
+                            <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                                {MENU_ITEMS.find(item => item.id === currentView)?.text || 'Dashboard'}
+                            </Typography>
+                        </Box>
+                    </Box>
                 </Toolbar>
             </AppBar>
+
             <Box
                 component="nav"
                 sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
@@ -105,7 +155,7 @@ export default function Layout({ children, currentView, onViewChange }) {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: '1px solid rgba(255,255,255,0.05)' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' },
                     }}
                 >
                     {drawer}
@@ -114,18 +164,36 @@ export default function Layout({ children, currentView, onViewChange }) {
                     variant="permanent"
                     sx={{
                         display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, borderRight: '1px solid rgba(255,255,255,0.05)' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' },
                     }}
                     open
                 >
                     {drawer}
                 </Drawer>
             </Box>
+
             <Box
                 component="main"
-                sx={{ flexGrow: 1, p: 3, width: { md: `calc(100% - ${drawerWidth}px)` }, mt: 8 }}
+                sx={{
+                    flexGrow: 1,
+                    p: 3,
+                    width: { md: `calc(100% - ${drawerWidth}px)` },
+                    mt: 8,
+                    minHeight: '100vh',
+                    position: 'relative'
+                }}
             >
-                {children}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentView}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                        {children}
+                    </motion.div>
+                </AnimatePresence>
             </Box>
         </Box>
     );
