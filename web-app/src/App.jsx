@@ -4,7 +4,6 @@ import theme from './theme/theme';
 import Layout from './components/Layout';
 import { DataProvider } from './context/DataContext';
 import Overview from './pages/Overview';
-
 import GlobalAnalysis from './pages/GlobalAnalysis';
 import Performance from './pages/Performance';
 import StudyHabits from './pages/StudyHabits';
@@ -20,6 +19,7 @@ function App() {
             case 'performance': return <Performance />;
             case 'habits': return <StudyHabits />;
             case 'ai': return <AIInsights />;
+            // case "summary" : return <Overview />;
             default: return <Overview />;
         }
     };

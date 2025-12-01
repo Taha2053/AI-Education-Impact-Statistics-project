@@ -3,6 +3,7 @@ import { Typography, Box, Paper, Grid, useTheme, MenuItem, Select, FormControl, 
 import Plot from 'react-plotly.js';
 import { useData } from '../context/DataContext';
 
+
 export default function GlobalAnalysis() {
     const { data, loading } = useData();
     const theme = useTheme();

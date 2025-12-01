@@ -77,7 +77,7 @@ export default function AIInsights() {
             type: 'scatter',
             mode: 'markers',
             name: tool,
-            marker: { 
+            marker: {
                 color: colors[index % colors.length],
                 size: 8,
                 opacity: 0.7,
@@ -131,15 +131,15 @@ export default function AIInsights() {
         >
             <Box>
                 <Typography variant="h4" sx={{ mb: 3, fontWeight: 70, textAlign: 'center' }}>
-                Overview of how students use different AI tools to help
+                    Overview of how students use different AI tools to help
                 </Typography>
 
                 {/* Filters Section */}
-                <Paper 
-                    sx={{ 
-                        p: 3, 
-                        mb: 3, 
-                        borderRadius: 4, 
+                <Paper
+                    sx={{
+                        p: 3,
+                        mb: 3,
+                        borderRadius: 4,
                         border: '1px solid rgba(255,255,255,0.05)',
                         background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`
                     }}
@@ -187,7 +187,7 @@ export default function AIInsights() {
                                     startIcon={<X size={16} />}
                                     variant="outlined"
                                     size="small"
-                                    sx={{ 
+                                    sx={{
                                         textTransform: 'none',
                                         transition: 'all 0.3s ease',
                                         '&:hover': {
@@ -253,9 +253,9 @@ export default function AIInsights() {
                                 exit="exit"
                                 transition={{ duration: 0.3, delay: 0.1 }}
                             >
-                                <Paper sx={{ 
-                                    p: 3, 
-                                    borderRadius: 4, 
+                                <Paper sx={{
+                                    p: 3,
+                                    borderRadius: 4,
                                     border: '1px solid rgba(255,255,255,0.05)',
                                     height: '100%',
                                     display: 'flex',
@@ -288,13 +288,13 @@ export default function AIInsights() {
                                                 paper_bgcolor: 'transparent',
                                                 plot_bgcolor: 'transparent',
                                                 font: { color: theme.palette.text.secondary },
-                                                xaxis: { 
-                                                    title: { 
+                                                xaxis: {
+                                                    title: {
                                                         text: 'AI Tool',
                                                         standoff: 15
                                                     }
                                                 },
-                                                yaxis: { title: { text: 'Number of Users' }},
+                                                yaxis: { title: { text: 'Number of Users' } },
                                                 margin: { t: 10, r: 20, l: 60, b: 80 },
                                                 transition: {
                                                     duration: 500,
@@ -318,9 +318,9 @@ export default function AIInsights() {
                                 exit="exit"
                                 transition={{ duration: 0.3, delay: 0.2 }}
                             >
-                                <Paper sx={{ 
-                                    p: 3, 
-                                    borderRadius: 4, 
+                                <Paper sx={{
+                                    p: 3,
+                                    borderRadius: 4,
                                     border: '1px solid rgba(255,255,255,0.05)',
                                     height: '100%',
                                     display: 'flex',
@@ -353,13 +353,13 @@ export default function AIInsights() {
                                                 paper_bgcolor: 'transparent',
                                                 plot_bgcolor: 'transparent',
                                                 font: { color: theme.palette.text.secondary },
-                                                xaxis: { 
-                                                    title: { 
+                                                xaxis: {
+                                                    title: {
                                                         text: 'AI Tool',
                                                         standoff: 15
                                                     }
                                                 },
-                                                yaxis: { title: { text: 'Average Usage Hours per Week' }},
+                                                yaxis: { title: { text: 'Average Usage Hours per Week' } },
                                                 margin: { t: 10, r: 20, l: 60, b: 80 },
                                                 transition: {
                                                     duration: 500,
@@ -383,9 +383,9 @@ export default function AIInsights() {
                                 exit="exit"
                                 transition={{ duration: 0.3, delay: 0.3 }}
                             >
-                                <Paper sx={{ 
-                                    p: 3, 
-                                    borderRadius: 4, 
+                                <Paper sx={{
+                                    p: 3,
+                                    borderRadius: 4,
                                     border: '1px solid rgba(255,255,255,0.05)',
                                     display: 'flex',
                                     flexDirection: 'column',
@@ -408,16 +408,16 @@ export default function AIInsights() {
                                                 paper_bgcolor: 'transparent',
                                                 plot_bgcolor: 'transparent',
                                                 font: { color: theme.palette.text.secondary },
-                                                xaxis: { 
+                                                xaxis: {
                                                     title: { text: 'AI Tool' },
                                                     type: 'category'
                                                 },
-                                                yaxis: { 
+                                                yaxis: {
                                                     title: { text: 'GPA' },
                                                     range: [0, 4]
                                                 },
                                                 showlegend: false,
-                                            
+
                                                 margin: { t: 10, r: 20, l: 60, b: 80 },
                                                 transition: {
                                                     duration: 500,
@@ -441,17 +441,17 @@ export default function AIInsights() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.4 }}
                 >
-                    <Paper sx={{ 
-                        p: 4, 
+                    <Paper sx={{
+                        p: 4,
                         mt: 3,
-                        borderRadius: 4, 
+                        borderRadius: 4,
                         border: '1px solid rgba(255,255,255,0.05)',
                         background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`
                     }}>
                         <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, textAlign: 'center' }}>
                             Insights & Interpretations
                         </Typography>
-                        <Box sx={{ 
+                        <Box sx={{
                             minHeight: '200px',
                             display: 'flex',
                             alignItems: 'center',
@@ -459,14 +459,14 @@ export default function AIInsights() {
                             flexDirection: 'column',
                             gap: 2
                         }}>
-                            <Typography variant="body1" sx={{ 
+                            <Typography variant="body1" sx={{
                                 color: 'text.secondary',
                                 textAlign: 'center',
                                 fontStyle: 'italic'
                             }}>
                                 Interpretations will be integrated here
                             </Typography>
-                            <Typography variant="body2" sx={{ 
+                            <Typography variant="body2" sx={{
                                 color: 'text.secondary',
                                 textAlign: 'center',
                                 opacity: 0.7
