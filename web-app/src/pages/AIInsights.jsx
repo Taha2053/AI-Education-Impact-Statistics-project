@@ -10,6 +10,7 @@ export default function AIInsights() {
     const theme = useTheme();
     const [selectedCountry, setSelectedCountry] = useState('all');
     const [selectedTool, setSelectedTool] = useState('all');
+    const [selectedMajor, setSelectedMajor] = useState('all');
 
     if (loading || !data) return <Typography>Loading...</Typography>;
 
@@ -24,22 +25,29 @@ export default function AIInsights() {
         return Array.from(tools).sort();
     }, [data]);
 
+    const uniqueMajors = useMemo(() => {
+        const majors = new Set(data.students.map(s => s.major));
+        return Array.from(majors).sort();
+    }, [data]);
+
     // Filter students based on selected filters
     const filteredStudents = useMemo(() => {
         return data.students.filter(s => {
             const countryMatch = selectedCountry === 'all' || s.country === selectedCountry;
             const toolMatch = selectedTool === 'all' || s.ai_tool === selectedTool;
-            return countryMatch && toolMatch;
+            const majorMatch = selectedMajor === 'all' || s.major === selectedMajor;
+            return countryMatch && toolMatch && majorMatch;
         });
-    }, [data.students, selectedCountry, selectedTool]);
+    }, [data.students, selectedCountry, selectedTool, selectedMajor]);
 
     // Clear filters function
     const clearFilters = () => {
         setSelectedCountry('all');
         setSelectedTool('all');
+        setSelectedMajor('all');
     };
 
-    const hasActiveFilters = selectedCountry !== 'all' || selectedTool !== 'all';
+    const hasActiveFilters = selectedCountry !== 'all' || selectedTool !== 'all' || selectedMajor !== 'all';
 
     // AI Tool Popularity
     const tools = {};
@@ -129,21 +137,25 @@ export default function AIInsights() {
             variants={pageVariants}
             transition={{ duration: 0.4 }}
         >
-            <Box>
-                <Typography variant="h4" sx={{ mb: 3, fontWeight: 70, textAlign: 'center' }}>
-                    Overview of how students use different AI tools to help
+            <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
+                <Typography
+                    variant="h3"
+                    sx={{
+                        mb: 4,
+                        fontWeight: 800,
+                        textAlign: 'center',
+                        maxWidth: 700,
+                        mx: 'auto',
+                        background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                    }}
+                >
+                    Overview of how students use different AI tools
                 </Typography>
 
                 {/* Filters Section */}
-                <Paper
-                    sx={{
-                        p: 3,
-                        mb: 3,
-                        borderRadius: 4,
-                        border: '1px solid rgba(255,255,255,0.05)',
-                        background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`
-                    }}
-                >
+                <Box sx={{ mb: 3 }}>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                         <FormControl sx={{ minWidth: 200 }}>
                             <InputLabel>Country</InputLabel>
@@ -156,6 +168,21 @@ export default function AIInsights() {
                                 <MenuItem value="all">All Countries</MenuItem>
                                 {uniqueCountries.map(country => (
                                     <MenuItem key={country} value={country}>{country}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl sx={{ minWidth: 200 }}>
+                            <InputLabel>Major</InputLabel>
+                            <Select
+                                value={selectedMajor}
+                                label="Major"
+                                onChange={(e) => setSelectedMajor(e.target.value)}
+                                sx={{ transition: 'all 0.3s ease' }}
+                            >
+                                <MenuItem value="all">All Majors</MenuItem>
+                                {uniqueMajors.map(major => (
+                                    <MenuItem key={major} value={major}>{major}</MenuItem>
                                 ))}
                             </Select>
                         </FormControl>
@@ -218,6 +245,21 @@ export default function AIInsights() {
                                     />
                                 </motion.div>
                             )}
+                            {selectedMajor !== 'all' && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <Chip
+                                        label={`Major: ${selectedMajor}`}
+                                        onDelete={() => setSelectedMajor('all')}
+                                        color="success"
+                                        variant="outlined"
+                                    />
+                                </motion.div>
+                            )}
                             {selectedTool !== 'all' && (
                                 <motion.div
                                     initial={{ opacity: 0, x: -10 }}
@@ -228,8 +270,17 @@ export default function AIInsights() {
                                     <Chip
                                         label={`Tool: ${selectedTool}`}
                                         onDelete={() => setSelectedTool('all')}
-                                        color="secondary"
                                         variant="outlined"
+                                        sx={{
+                                            color: '#ffffff',
+                                            borderColor: '#ffffff',
+                                            '& .MuiChip-deleteIcon': {
+                                                color: '#ffffff'
+                                            },
+                                            '&:hover': {
+                                                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                                            }
+                                        }}
                                     />
                                 </motion.div>
                             )}
@@ -240,11 +291,11 @@ export default function AIInsights() {
                     <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
                         Showing {filteredStudents.length} of {data.students.length} students
                     </Typography>
-                </Paper>
+                </Box>
 
                 {/* Charts Grid */}
                 <AnimatePresence mode="wait">
-                    <Grid container spacing={3} key={`${selectedCountry}-${selectedTool}`} justifyContent="center">
+                    <Grid container spacing={3} key={`${selectedCountry}-${selectedTool}-${selectedMajor}`} justifyContent="center">
                         <Grid item xs={12} md={10} lg={5}>
                             <motion.div
                                 variants={cardVariants}
@@ -343,7 +394,7 @@ export default function AIInsights() {
                                                 y: avgUsageByTool.map(t => t.avgHours),
                                                 type: 'bar',
                                                 marker: {
-                                                    color: theme.palette.secondary.main
+                                                    color: '#ffffff'
                                                 },
                                                 text: avgUsageByTool.map(t => `${t.avgHours} hrs`),
                                                 textposition: 'outside'
