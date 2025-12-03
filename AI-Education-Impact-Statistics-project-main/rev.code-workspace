@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../rev"
+		},
+		{
+			"path": "../../../jeu de memoire"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "jeu de memoire"
+	}
+}

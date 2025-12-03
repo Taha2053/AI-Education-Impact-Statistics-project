@@ -1,0 +1,21 @@
+# Node
+node_modules/
+
+# Build
+dist/
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Lock files (optional)
+# package-lock.json
+# yarn.lock
