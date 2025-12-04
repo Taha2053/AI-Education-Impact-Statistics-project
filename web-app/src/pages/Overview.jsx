@@ -7,7 +7,7 @@ import { useData } from '../context/DataContext';
 import StatCard from '../components/StatCard';
 
 export default function Overview() {
-  const { data, loading } = useData();
+  const { data, loading, countrySummaries } = useData();
   const theme = useTheme();
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [selectedFieldOfStudy, setSelectedFieldOfStudy] = useState('all');
@@ -23,8 +23,8 @@ export default function Overview() {
   // Get unique fields of study
   const uniqueFieldsOfStudy = useMemo(() => {
     if (!data) return [];
-    const majors = new Set(data.students.map(s => s.major));
-    return Array.from(majors).sort();
+    const fields = new Set(data.students.map(s => s.field_of_study || s.major).filter(Boolean));
+    return Array.from(fields).sort();
   }, [data]);
 
   // Filter students based on selected country
@@ -32,23 +32,42 @@ export default function Overview() {
     if (!data) return [];
     return data.students.filter(s => {
       const countryMatch = selectedCountry === 'all' || s.country === selectedCountry;
-      const majorMatch = selectedFieldOfStudy === 'all' || s.major === selectedFieldOfStudy;
+      const studentField = s.field_of_study || s.major;
+      const majorMatch = selectedFieldOfStudy === 'all' || studentField === selectedFieldOfStudy;
       return countryMatch && majorMatch;
     });
   }, [data, selectedCountry, selectedFieldOfStudy]);
 
   // Filter country summary based on selected country
   const filteredCountrySummary = useMemo(() => {
-    if (!data) return [];
-    if (selectedCountry === 'all') return data.country_summary;
-    return data.country_summary.filter(c => c.country === selectedCountry);
-  }, [data, selectedCountry]);
+    if (!countrySummaries || !Array.isArray(countrySummaries)) return [];
+    if (selectedCountry === 'all') return countrySummaries;
+    return countrySummaries.filter(c => c.country === selectedCountry);
+  }, [countrySummaries, selectedCountry]);
 
   // Calculate key metrics
   const totalStudents = filteredStudents.length;
-  const avgGpa = totalStudents > 0 ? (filteredStudents.reduce((acc, s) => acc + s.gpa, 0) / totalStudents).toFixed(2) : '0.00';
-  const avgAiUsage = totalStudents > 0 ? (filteredStudents.reduce((acc, s) => acc + s.ai_usage_hours, 0) / totalStudents).toFixed(1) : '0.0';
-  const avgStudyHours = totalStudents > 0 ? (filteredStudents.reduce((acc, s) => acc + s.study_hours_per_week, 0) / totalStudents).toFixed(1) : '0.0';
+
+  const avgGpa = useMemo(() => {
+    if (totalStudents === 0) return 'N/A';
+    const validGPAs = filteredStudents.filter(s => s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa));
+    if (validGPAs.length === 0) return 'N/A';
+    return (validGPAs.reduce((acc, s) => acc + s.gpa, 0) / validGPAs.length).toFixed(2);
+  }, [filteredStudents, totalStudents]);
+
+  const avgAiUsage = useMemo(() => {
+    if (totalStudents === 0) return '0.0';
+    const validUsage = filteredStudents.filter(s => s.ai_usage_hours !== null && !isNaN(s.ai_usage_hours));
+    if (validUsage.length === 0) return '0.0';
+    return (validUsage.reduce((acc, s) => acc + s.ai_usage_hours, 0) / validUsage.length).toFixed(1);
+  }, [filteredStudents, totalStudents]);
+
+  const avgStudyHours = useMemo(() => {
+    if (totalStudents === 0) return '0.0';
+    const validHours = filteredStudents.filter(s => s.study_hours_per_week !== null && !isNaN(s.study_hours_per_week));
+    if (validHours.length === 0) return '0.0';
+    return (validHours.reduce((acc, s) => acc + s.study_hours_per_week, 0) / validHours.length).toFixed(1);
+  }, [filteredStudents, totalStudents]);
 
   // Most popular AI tool
   const aiToolCounts = useMemo(() => {
@@ -75,8 +94,17 @@ export default function Overview() {
   // Calculate GPA-AI correlation
   const correlation = useMemo(() => {
     if (filteredStudents.length === 0) return 0;
-    const x = filteredStudents.map(s => s.ai_usage_hours);
-    const y = filteredStudents.map(s => s.gpa);
+
+    // Filter out students with null GPA or AI usage
+    const validStudents = filteredStudents.filter(s =>
+      s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa) &&
+      s.ai_usage_hours !== null && !isNaN(s.ai_usage_hours)
+    );
+
+    if (validStudents.length < 2) return 0;
+
+    const x = validStudents.map(s => s.ai_usage_hours);
+    const y = validStudents.map(s => s.gpa);
     const n = x.length;
     const avgX = x.reduce((a, b) => a + b) / n;
     const avgY = y.reduce((a, b) => a + b) / n;
@@ -107,17 +135,19 @@ export default function Overview() {
       : [selectedCountry];
 
     return countriesToMap.map(country => {
-      const studentsInCountry = data.students.filter(s =>
-        s.country === country &&
-        (selectedFieldOfStudy === 'all' || s.major === selectedFieldOfStudy)
-      );
+      const studentsInCountry = data.students.filter(s => {
+        const studentField = s.field_of_study || s.major;
+        return s.country === country &&
+          (selectedFieldOfStudy === 'all' || studentField === selectedFieldOfStudy);
+      });
 
       const count = studentsInCountry.length;
-      const totalHours = studentsInCountry.reduce((acc, s) => acc + s.study_hours_per_week, 0);
+      const validHours = studentsInCountry.filter(s => s.study_hours_per_week !== null && !isNaN(s.study_hours_per_week));
+      const totalHours = validHours.reduce((acc, s) => acc + s.study_hours_per_week, 0);
 
       return {
         country,
-        avgStudyHours: count > 0 ? (totalHours / count).toFixed(1) : '0.0'
+        avgStudyHours: validHours.length > 0 ? (totalHours / validHours.length).toFixed(1) : '0.0'
       };
     });
   }, [data, selectedCountry, selectedFieldOfStudy, uniqueCountries]);
@@ -126,7 +156,10 @@ export default function Overview() {
   const majorDistribution = useMemo(() => {
     const majors = {};
     filteredStudents.forEach(s => {
-      majors[s.major] = (majors[s.major] || 0) + 1;
+      const field = s.field_of_study || s.major;
+      if (field) {
+        majors[field] = (majors[field] || 0) + 1;
+      }
     });
     return majors;
   }, [filteredStudents]);
@@ -148,11 +181,12 @@ export default function Overview() {
     };
 
     filteredStudents.forEach(s => {
-      if (s.major === 'Computer Science' || s.major === 'Engineering') {
+      const field = s.field_of_study || s.major || '';
+      if (field.includes('Computer Science') || field.includes('Engineering') || field.includes('Data Science')) {
         purposes['Coding']++;
-      } else if (s.major === 'Arts') {
+      } else if (field.includes('Arts') || field.includes('Design')) {
         purposes['Creative']++;
-      } else if (s.major === 'Medicine') {
+      } else if (field.includes('Medicine') || field.includes('Health') || field.includes('Pharmacy')) {
         purposes['Research']++;
       } else {
         purposes['Problem Solving']++;
@@ -165,8 +199,10 @@ export default function Overview() {
   // Skill Level (derived from Satisfaction Score)
   const avgSkillLevel = useMemo(() => {
     if (totalStudents === 0) return 0;
-    const totalScore = filteredStudents.reduce((acc, s) => acc + s.satisfaction_score, 0);
-    return (totalScore / totalStudents).toFixed(1);
+    const validScores = filteredStudents.filter(s => s.satisfaction_score !== null && !isNaN(s.satisfaction_score));
+    if (validScores.length === 0) return 0;
+    const totalScore = validScores.reduce((acc, s) => acc + s.satisfaction_score, 0);
+    return (totalScore / validScores.length).toFixed(1);
   }, [filteredStudents, totalStudents]);
 
   // Clear filters
@@ -178,8 +214,8 @@ export default function Overview() {
   const hasActiveFilters = selectedCountry !== 'all' || selectedFieldOfStudy !== 'all';
 
   // Map data
-  const countryNames = !data ? [] : (selectedCountry === 'all' ? data.country_summary : filteredCountrySummary).map(c => c.country);
-  const mapMetricValues = !data ? [] : (selectedCountry === 'all' ? data.country_summary : filteredCountrySummary).map(c => c[mapMetric]);
+  const countryNames = !countrySummaries ? [] : (selectedCountry === 'all' ? countrySummaries : filteredCountrySummary).map(c => c.country);
+  const mapMetricValues = !countrySummaries ? [] : (selectedCountry === 'all' ? countrySummaries : filteredCountrySummary).map(c => c[mapMetric]);
 
   const metricLabels = {
     avg_gpa: 'Average GPA',
@@ -202,13 +238,19 @@ export default function Overview() {
       }
 
       // Country-specific insights
-      if (selectedCountry === 'all' && data.country_summary.length > 0) {
-        const highestGPA = data.country_summary.reduce((max, c) => c.avg_gpa > max.avg_gpa ? c : max);
-        const lowestGPA = data.country_summary.reduce((min, c) => c.avg_gpa < min.avg_gpa ? c : min);
-        insights.push(`${highestGPA.country} leads with the highest average GPA (${highestGPA.avg_gpa.toFixed(2)}), while ${lowestGPA.country} has the lowest (${lowestGPA.avg_gpa.toFixed(2)}).`);
+      if (selectedCountry === 'all' && countrySummaries && Array.isArray(countrySummaries) && countrySummaries.length > 0) {
+        const countriesWithGPA = countrySummaries.filter(c => c.avg_gpa !== null && !isNaN(c.avg_gpa));
+        if (countriesWithGPA.length > 0) {
+          const highestGPA = countriesWithGPA.reduce((max, c) => c.avg_gpa > max.avg_gpa ? c : max);
+          const lowestGPA = countriesWithGPA.reduce((min, c) => c.avg_gpa < min.avg_gpa ? c : min);
+          insights.push(`${highestGPA.country} leads with the highest average GPA (${highestGPA.avg_gpa.toFixed(2)}), while ${lowestGPA.country} has the lowest (${lowestGPA.avg_gpa.toFixed(2)}).`);
+        }
 
-        const highestAI = data.country_summary.reduce((max, c) => c.avg_ai_usage > max.avg_ai_usage ? c : max);
-        insights.push(`${highestAI.country} shows the highest AI usage (${highestAI.avg_ai_usage.toFixed(1)} hrs/week), indicating strong technology adoption.`);
+        const countriesWithAI = countrySummaries.filter(c => c.avg_ai_usage_hours !== null && !isNaN(c.avg_ai_usage_hours));
+        if (countriesWithAI.length > 0) {
+          const highestAI = countriesWithAI.reduce((max, c) => c.avg_ai_usage_hours > max.avg_ai_usage_hours ? c : max);
+          insights.push(`${highestAI.country} shows the highest AI usage (${highestAI.avg_ai_usage_hours.toFixed(1)} hrs/week), indicating strong technology adoption.`);
+        }
       }
 
       // AI tool insight
@@ -222,7 +264,7 @@ export default function Overview() {
       }
     } catch (error) {
       console.error('Error generating insights:', error);
-      insights.push('Unable to generate insights at this time. Please try refreshing the page.');
+      // Don't push error message to insights array
     }
 
     return insights;

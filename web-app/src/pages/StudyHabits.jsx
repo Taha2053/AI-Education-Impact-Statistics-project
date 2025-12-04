@@ -17,9 +17,9 @@ export default function StudyHabits() {
     const { countries, majors, aiTools } = useMemo(() => {
         if (!data?.students) return { countries: [], majors: [], aiTools: [] };
         return {
-            countries: [...new Set(data.students.map((s) => s.country))].sort(),
-            majors: [...new Set(data.students.map((s) => s.major))].sort(),
-            aiTools: [...new Set(data.students.map((s) => s.ai_tool))].sort(),
+            countries: [...new Set(data.students.map((s) => s.country).filter(Boolean))].sort(),
+            majors: [...new Set(data.students.map((s) => s.field_of_study || s.major).filter(Boolean))].sort(),
+            aiTools: [...new Set(data.students.map((s) => s.ai_tool).filter(Boolean))].sort(),
         };
     }, [data]);
 
@@ -28,18 +28,19 @@ export default function StudyHabits() {
     const filteredStudents = useMemo(() => {
         return studentData.filter((s) => {
             const countryMatch = selectedCountry === 'All' || s.country === selectedCountry;
-            const majorMatch = selectedMajor === 'All' || s.major === selectedMajor;
+            const studentMajor = s.field_of_study || s.major;
+            const majorMatch = selectedMajor === 'All' || studentMajor === selectedMajor;
             const toolMatch = selectedAITool === 'All' || s.ai_tool === selectedAITool;
             return countryMatch && majorMatch && toolMatch;
         });
     }, [studentData, selectedCountry, selectedMajor, selectedAITool]);
 
-    const aiStudyHours = filteredStudents.map(s => s.ai_usage_hours);
-    const traditionalStudyHours = filteredStudents.map(s => Math.max(0, s.study_hours_per_week - s.ai_usage_hours));
+    const aiStudyHours = filteredStudents.map(s => s.ai_usage_hours || 0);
+    const traditionalStudyHours = filteredStudents.map(s => Math.max(0, (s.study_hours_per_week || 0) - (s.ai_usage_hours || 0)));
 
     const studyTimeBreakdown = useMemo(() => {
-        const totalAI = aiStudyHours.reduce((sum, hours) => sum + hours, 0);
-        const totalTraditional = traditionalStudyHours.reduce((sum, hours) => sum + hours, 0);
+        const totalAI = aiStudyHours.reduce((sum, hours) => sum + (hours || 0), 0);
+        const totalTraditional = traditionalStudyHours.reduce((sum, hours) => sum + (hours || 0), 0);
         const totalStudy = totalAI + totalTraditional;
 
         return {
@@ -65,18 +66,25 @@ export default function StudyHabits() {
         };
     }, [aiToolCounts]);
 
-    const sortedStudents = [...filteredStudents].sort((a, b) => parseInt(a.id.substring(3)) - parseInt(b.id.substring(3)));
+    const sortedStudents = [...filteredStudents].sort((a, b) => {
+        const getIdNumber = (id) => {
+            if (!id || typeof id !== 'string') return 0;
+            const match = id.match(/\d+$/);
+            return match ? parseInt(match[0]) : 0;
+        };
+        return getIdNumber(a.id) - getIdNumber(b.id);
+    });
 
     const aiUsagePerformanceData = useMemo(() => {
-        const aiUsage = sortedStudents.map(s => s.ai_usage_hours);
-        const gpa = sortedStudents.map(s => s.gpa);
-        const studentIds = sortedStudents.map(s => s.id);
+        const aiUsage = sortedStudents.map(s => s.ai_usage_hours || 0);
+        const gpa = sortedStudents.map(s => s.gpa || 0);
+        const studentIds = sortedStudents.map(s => s.id || '');
 
         return { aiUsage, gpa, studentIds };
     }, [sortedStudents]);
 
     const aiIntegratedLearners = filteredStudents.filter(s => s.ai_tool && s.ai_tool !== 'None');
-    const traditionalLearners = filteredStudents.filter(s => s.ai_tool === 'None');
+    const traditionalLearners = filteredStudents.filter(s => !s.ai_tool || s.ai_tool === 'None');
 
     const calculateGroupStats = (group) => {
         if (group.length === 0) {
@@ -90,18 +98,24 @@ export default function StudyHabits() {
                 count: 0
             };
         }
-        const totalStudyTime = group.reduce((sum, s) => sum + s.study_hours_per_week, 0);
-        const totalAiUsage = group.reduce((sum, s) => sum + s.ai_usage_hours, 0);
-        const totalGpa = group.reduce((sum, s) => sum + s.gpa, 0);
-        const totalStress = group.reduce((sum, s) => sum + s.stress_level, 0);
-        const totalSatisfaction = group.reduce((sum, s) => sum + s.satisfaction_score, 0);
+        const totalStudyTime = group.reduce((sum, s) => sum + (s.study_hours_per_week || 0), 0);
+        const totalAiUsage = group.reduce((sum, s) => sum + (s.ai_usage_hours || 0), 0);
+
+        const validGpaStudents = group.filter(s => s.gpa != null && !isNaN(s.gpa));
+        const totalGpa = validGpaStudents.reduce((sum, s) => sum + s.gpa, 0);
+
+        const validStressStudents = group.filter(s => s.stress_level != null && !isNaN(s.stress_level));
+        const totalStress = validStressStudents.reduce((sum, s) => sum + s.stress_level, 0);
+
+        const validSatisfactionStudents = group.filter(s => s.satisfaction_score != null && !isNaN(s.satisfaction_score));
+        const totalSatisfaction = validSatisfactionStudents.reduce((sum, s) => sum + s.satisfaction_score, 0);
 
         return {
             avgStudyTime: totalStudyTime / group.length,
             avgAiUsage: totalAiUsage / group.length,
-            avgGpa: totalGpa / group.length,
-            avgStress: totalStress / group.length,
-            avgSatisfaction: totalSatisfaction / group.length,
+            avgGpa: validGpaStudents.length > 0 ? totalGpa / validGpaStudents.length : 0,
+            avgStress: validStressStudents.length > 0 ? totalStress / validStressStudents.length : 0,
+            avgSatisfaction: validSatisfactionStudents.length > 0 ? totalSatisfaction / validSatisfactionStudents.length : 0,
             avgAiStudyProportion: totalStudyTime > 0 ? (totalAiUsage / totalStudyTime) : 0,
             count: group.length
         };
@@ -138,11 +152,16 @@ export default function StudyHabits() {
         }));
 
         filteredStudents.forEach(s => {
-            let binIndex = bins.findIndex((bin, i) => s.ai_usage_hours >= bin && (i === bins.length - 1 || s.ai_usage_hours < bins[i + 1]));
-            if (binIndex === -1) binIndex = bins.length - 1;
-            
-            groupedAverages[binIndex].stressScores.push(s.stress_level);
-            groupedAverages[binIndex].satisfactionScores.push(s.satisfaction_score);
+            const hours = s.ai_usage_hours || 0;
+            let binIndex = bins.findIndex((bin, i) => hours >= bin && (i === bins.length - 1 || hours < bins[i + 1]));
+            if (binIndex === -1 || binIndex >= groupedAverages.length) binIndex = groupedAverages.length - 1;
+
+            if (s.stress_level != null && !isNaN(s.stress_level)) {
+                groupedAverages[binIndex].stressScores.push(s.stress_level);
+            }
+            if (s.satisfaction_score != null && !isNaN(s.satisfaction_score)) {
+                groupedAverages[binIndex].satisfactionScores.push(s.satisfaction_score);
+            }
         });
 
         groupedAverages.forEach(group => {
@@ -165,7 +184,7 @@ export default function StudyHabits() {
             <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
                 {/* Header */}
                 <Box sx={{ mb: 6 }}>
-                    <Typography variant="h3" sx={{ mb: 2, fontWeight: 800,textAlign: 'center', margin: '0 auto', maxWidth: '700px', background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    <Typography variant="h3" sx={{ mb: 2, fontWeight: 800, textAlign: 'center', margin: '0 auto', maxWidth: '700px', background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         Study Habits Insights
                     </Typography>
                     <Typography variant="body1" sx={{ textAlign: 'center', margin: '0 auto', maxWidth: '700px', color: theme.palette.text.secondary, fontSize: 16 }}>
@@ -221,9 +240,9 @@ export default function StudyHabits() {
                 {/* KPI Stats Cards */}
                 <Grid container spacing={3} sx={{ mb: 6 }}>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 3, 
-                            borderRadius: 3, 
+                        <Paper sx={{
+                            p: 3,
+                            borderRadius: 3,
                             border: '1px solid rgba(59, 130, 246, 0.3)',
                             background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.6) 0%, rgba(37, 99, 235, 0.3) 100%)',
                             backdropFilter: 'blur(10px)'
@@ -245,9 +264,9 @@ export default function StudyHabits() {
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 3, 
-                            borderRadius: 3, 
+                        <Paper sx={{
+                            p: 3,
+                            borderRadius: 3,
                             border: '1px solid rgba(16, 185, 129, 0.3)',
                             background: 'linear-gradient(135deg, rgba(5, 46, 22, 0.6) 0%, rgba(16, 185, 129, 0.3) 100%)',
                             backdropFilter: 'blur(10px)'
@@ -269,9 +288,9 @@ export default function StudyHabits() {
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 3, 
-                            borderRadius: 3, 
+                        <Paper sx={{
+                            p: 3,
+                            borderRadius: 3,
                             border: '1px solid rgba(168, 85, 247, 0.3)',
                             background: 'linear-gradient(135deg, rgba(55, 15, 75, 0.6) 0%, rgba(168, 85, 247, 0.3) 100%)',
                             backdropFilter: 'blur(10px)'
@@ -293,9 +312,9 @@ export default function StudyHabits() {
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Paper sx={{ 
-                            p: 3, 
-                            borderRadius: 3, 
+                        <Paper sx={{
+                            p: 3,
+                            borderRadius: 3,
                             border: '1px solid rgba(251, 191, 36, 0.3)',
                             background: 'linear-gradient(135deg, rgba(78, 22, 6, 0.6) 0%, rgba(251, 191, 36, 0.3) 100%)',
                             backdropFilter: 'blur(10px)'
@@ -318,174 +337,174 @@ export default function StudyHabits() {
                     </Grid>
                 </Grid>
 
-            <Grid container spacing={3}>
-                {/* Comparison Dashboard */}
-                <Grid item xs={12} md={12}>
-                    <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
-                        <Typography variant="h6" sx={{ mb: 4, color: theme.palette.primary.light, fontWeight: 600, fontSize: 18 }}>
-                            Learner Group Comparison (Academic & AI Usage Metrics)
-                        </Typography>
-                
-                        <Plot
-                            data={[
-                                {
-                                    x: ['Avg. GPA', 'Avg. Study Time', 'Avg. AI Usage', 'Avg. AI Study Proportion'],
-                                    y: [
-                                        aiLearnerStats.avgGpa,
-                                        aiLearnerStats.avgStudyTime,
-                                        aiLearnerStats.avgAiUsage,
-                                        aiLearnerStats.avgAiStudyProportion
-                                    ],
-                                    name: 'AI-Integrated Learners',
-                                    type: 'bar',
-                                    text: [
-                                        aiLearnerStats.avgGpa.toFixed(2),
-                                        aiLearnerStats.avgStudyTime.toFixed(1),
-                                        aiLearnerStats.avgAiUsage.toFixed(2),
-                                        aiLearnerStats.avgAiStudyProportion.toFixed(2)
-                                    ],
-                                    textposition: 'auto',
-                                    marker: { color: theme.palette.info.light }
-                                },
-                                {
-                                    x: ['Avg. GPA', 'Avg. Study Time', 'Avg. AI Usage', 'Avg. AI Study Proportion'],
-                                    y: [
-                                        traditionalLearnerStats.avgGpa,
-                                        traditionalLearnerStats.avgStudyTime,
-                                        traditionalLearnerStats.avgAiUsage,
-                                        traditionalLearnerStats.avgAiStudyProportion
-                                    ],
-                                    name: 'Traditional Learners',
-                                    type: 'bar',
-                                    text: [
-                                        traditionalLearnerStats.avgGpa.toFixed(2),
-                                        traditionalLearnerStats.avgStudyTime.toFixed(1),
-                                        traditionalLearnerStats.avgAiUsage.toFixed(2),
-                                        traditionalLearnerStats.avgAiStudyProportion.toFixed(2)
-                                    ],
-                                    textposition: 'auto',
-                                    marker: { color: theme.palette.primary.dark }
-                                }
-                            ]}
-                            layout={{
-                                barmode: 'group',
-                                autosize: true,
-                                paper_bgcolor: 'transparent',
-                                plot_bgcolor: 'transparent',
-                                font: { color: theme.palette.text.primary },
-                                height: 500,
-                                margin: { t: 80, b: 60, l: 60, r: 60 },
-                                xaxis: {
-                                    title: { text: 'Metric', font: { size: 14, weight: 600, color: theme.palette.text.primary } },
-                                    tickfont: { color: theme.palette.text.secondary },
-                                    gridcolor: 'rgba(255,255,255,0.1)',
-                                    zerolinecolor: 'rgba(255,255,255,0.2)'
-                                },
-                                yaxis: {
-                                    title: { text: 'Average Metric Value', font: { size: 14, weight: 600, color: theme.palette.text.primary } },
-                                    tickfont: { color: theme.palette.text.secondary },
-                                    gridcolor: 'rgba(255,255,255,0.1)',
-                                    zerolinecolor: 'rgba(255,255,255,0.2)'
-                                },
-                                legend: { orientation: 'h', y: 1.1, x: 0, bgcolor: 'transparent', font: { color: theme.palette.text.primary } },
-                            }}
-                            config={{ displayModeBar: false }}
-                            useResizeHandler
-                            style={{ width: '100%', height: '500px' }}
-                        />
-                
-                    </Paper>
-                </Grid>
-            
-                {/* Stress & Satisfaction - Line Chart */}
-                <Grid item xs={12} md={12}>
-                    <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.03)' }}>
-                        <Typography variant="h6" sx={{ mb: 3, color: theme.palette.primary.light, fontWeight: 600 }}>AI Usage vs. Stress & Satisfaction</Typography>
-                        <ResponsiveContainer width="100%" height={550}>
-                            <LineChart data={aiStressSatisfactionData} margin={{ top: 30, right: 50, left: 20, bottom: 100 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis 
-                                    dataKey="bin" 
-                                    stroke={theme.palette.text.secondary}
-                                    tick={{ fontSize: 13 }}
-                                    label={{ value: 'AI Usage Hours per Week', position: 'insideBottom', offset: -20, fill: theme.palette.text.secondary, fontSize: 14, fontWeight: 600 }}
-                                />
-                                <YAxis 
-                                    stroke={theme.palette.text.secondary}
-                                    tick={{ fontSize: 13 }}
-                                    domain={[0, 10]}
-                                    label={{ value: 'Average Score (1-10)', angle: -90, position: 'insideLeft', offset: 10, fill: theme.palette.text.secondary, fontSize: 14, fontWeight: 600 }}
-                                />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: theme.palette.background.paper, 
-                                        border: `1px solid ${theme.palette.divider}`,
-                                        borderRadius: '8px',
-                                        padding: '10px'
-                                    }}
-                                    labelStyle={{ color: theme.palette.text.primary }}
-                                    formatter={(value) => value.toFixed(2)}
-                                />
-                                <Legend wrapperStyle={{ paddingTop: '30px', fontSize: '14px' }} />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="avgStress" 
-                                    stroke={theme.palette.error.main} 
-                                    strokeWidth={3} 
-                                    dot={{ fill: theme.palette.error.main, r: 7 }}
-                                    activeDot={{ r: 9 }}
-                                    name="Stress Level"
-                                    isAnimationActive={true}
-                                />
-                                <Line 
-                                    type="monotone" 
-                                    dataKey="avgSatisfaction" 
-                                    stroke={theme.palette.info.light} 
-                                    strokeWidth={3} 
-                                    dot={{ fill: theme.palette.info.light, r: 7 }}
-                                    activeDot={{ r: 9 }}
-                                    name="Satisfaction Score"
-                                    isAnimationActive={true}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </Paper>
-                </Grid>
+                <Grid container spacing={3}>
+                    {/* Comparison Dashboard */}
+                    <Grid item xs={12} md={12}>
+                        <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
+                            <Typography variant="h6" sx={{ mb: 4, color: theme.palette.primary.light, fontWeight: 600, fontSize: 18 }}>
+                                Learner Group Comparison (Academic & AI Usage Metrics)
+                            </Typography>
 
-                {/* Insights and Interpretations Box */}
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                    <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
-                        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: theme.palette.primary.light, fontSize: 18, textAlign: 'center' }}>Insights&Interpretations</Typography>
-                        <Typography variant="body2" sx={{ mb: 3, color: theme.palette.text.secondary, lineHeight: 1.6 }}>
-                            Leveraging the interactive filters above, we can dive deep into how AI tool usage correlates with student study habits, stress levels, and satisfaction across different demographics. Here are some key interpretations:
-                        </Typography>
-                        <Stack spacing={2}>
-                            <Box>
-                                <Typography variant="body2" sx={{ mb: 1, color: theme.palette.info.light, fontWeight: 600 }}>
-                                    📊 Learner Group Comparison
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.6, ml: 2 }}>
-                                    This chart provides a direct, side-by-side comparison of AI-Integrated Learners versus Traditional Learners. Observe differences in average GPA, total study time, AI usage hours, and the proportion of study time dedicated to AI. For instance, do AI users achieve higher GPAs with less overall study time, suggesting increased efficiency?
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" sx={{ mb: 1, color: theme.palette.error.light, fontWeight: 600 }}>
-                                    🎯 AI Usage vs. Stress & Satisfaction
-                                </Typography>
-                                <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.6, ml: 2 }}>
-                                    This curve chart clearly illustrates how average stress levels and average satisfaction scores change across different brackets of AI Usage Hours per Week. Look for trends: Does moderate AI usage lead to higher satisfaction and lower stress, while very high usage potentially correlates with increased stress or diminished returns?
-                                </Typography>
-                            </Box>
-                            <Box>
-                                <Typography variant="body2" sx={{ color: theme.palette.warning.light, fontWeight: 600 }}>
-                                    💡 Explore the filters to uncover nuanced patterns across countries, majors, and specific AI tools.
-                                </Typography>
-                            </Box>
-                        </Stack>
-                    </Paper>
+                            <Plot
+                                data={[
+                                    {
+                                        x: ['Avg. GPA', 'Avg. Study Time', 'Avg. AI Usage', 'Avg. AI Study Proportion'],
+                                        y: [
+                                            aiLearnerStats.avgGpa,
+                                            aiLearnerStats.avgStudyTime,
+                                            aiLearnerStats.avgAiUsage,
+                                            aiLearnerStats.avgAiStudyProportion
+                                        ],
+                                        name: 'AI-Integrated Learners',
+                                        type: 'bar',
+                                        text: [
+                                            aiLearnerStats.avgGpa.toFixed(2),
+                                            aiLearnerStats.avgStudyTime.toFixed(1),
+                                            aiLearnerStats.avgAiUsage.toFixed(2),
+                                            aiLearnerStats.avgAiStudyProportion.toFixed(2)
+                                        ],
+                                        textposition: 'auto',
+                                        marker: { color: theme.palette.info.light }
+                                    },
+                                    {
+                                        x: ['Avg. GPA', 'Avg. Study Time', 'Avg. AI Usage', 'Avg. AI Study Proportion'],
+                                        y: [
+                                            traditionalLearnerStats.avgGpa,
+                                            traditionalLearnerStats.avgStudyTime,
+                                            traditionalLearnerStats.avgAiUsage,
+                                            traditionalLearnerStats.avgAiStudyProportion
+                                        ],
+                                        name: 'Traditional Learners',
+                                        type: 'bar',
+                                        text: [
+                                            traditionalLearnerStats.avgGpa.toFixed(2),
+                                            traditionalLearnerStats.avgStudyTime.toFixed(1),
+                                            traditionalLearnerStats.avgAiUsage.toFixed(2),
+                                            traditionalLearnerStats.avgAiStudyProportion.toFixed(2)
+                                        ],
+                                        textposition: 'auto',
+                                        marker: { color: theme.palette.primary.dark }
+                                    }
+                                ]}
+                                layout={{
+                                    barmode: 'group',
+                                    autosize: true,
+                                    paper_bgcolor: 'transparent',
+                                    plot_bgcolor: 'transparent',
+                                    font: { color: theme.palette.text.primary },
+                                    height: 500,
+                                    margin: { t: 80, b: 60, l: 60, r: 60 },
+                                    xaxis: {
+                                        title: { text: 'Metric', font: { size: 14, weight: 600, color: theme.palette.text.primary } },
+                                        tickfont: { color: theme.palette.text.secondary },
+                                        gridcolor: 'rgba(255,255,255,0.1)',
+                                        zerolinecolor: 'rgba(255,255,255,0.2)'
+                                    },
+                                    yaxis: {
+                                        title: { text: 'Average Metric Value', font: { size: 14, weight: 600, color: theme.palette.text.primary } },
+                                        tickfont: { color: theme.palette.text.secondary },
+                                        gridcolor: 'rgba(255,255,255,0.1)',
+                                        zerolinecolor: 'rgba(255,255,255,0.2)'
+                                    },
+                                    legend: { orientation: 'h', y: 1.1, x: 0, bgcolor: 'transparent', font: { color: theme.palette.text.primary } },
+                                }}
+                                config={{ displayModeBar: false }}
+                                useResizeHandler
+                                style={{ width: '100%', height: '500px' }}
+                            />
+
+                        </Paper>
+                    </Grid>
+
+                    {/* Stress & Satisfaction - Line Chart */}
+                    <Grid item xs={12} md={12}>
+                        <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.03)' }}>
+                            <Typography variant="h6" sx={{ mb: 3, color: theme.palette.primary.light, fontWeight: 600 }}>AI Usage vs. Stress & Satisfaction</Typography>
+                            <ResponsiveContainer width="100%" height={550}>
+                                <LineChart data={aiStressSatisfactionData} margin={{ top: 30, right: 50, left: 20, bottom: 100 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                    <XAxis
+                                        dataKey="bin"
+                                        stroke={theme.palette.text.secondary}
+                                        tick={{ fontSize: 13 }}
+                                        label={{ value: 'AI Usage Hours per Week', position: 'insideBottom', offset: -20, fill: theme.palette.text.secondary, fontSize: 14, fontWeight: 600 }}
+                                    />
+                                    <YAxis
+                                        stroke={theme.palette.text.secondary}
+                                        tick={{ fontSize: 13 }}
+                                        domain={[0, 10]}
+                                        label={{ value: 'Average Score (1-10)', angle: -90, position: 'insideLeft', offset: 10, fill: theme.palette.text.secondary, fontSize: 14, fontWeight: 600 }}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: theme.palette.background.paper,
+                                            border: `1px solid ${theme.palette.divider}`,
+                                            borderRadius: '8px',
+                                            padding: '10px'
+                                        }}
+                                        labelStyle={{ color: theme.palette.text.primary }}
+                                        formatter={(value) => value.toFixed(2)}
+                                    />
+                                    <Legend wrapperStyle={{ paddingTop: '30px', fontSize: '14px' }} />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="avgStress"
+                                        stroke={theme.palette.error.main}
+                                        strokeWidth={3}
+                                        dot={{ fill: theme.palette.error.main, r: 7 }}
+                                        activeDot={{ r: 9 }}
+                                        name="Stress Level"
+                                        isAnimationActive={true}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="avgSatisfaction"
+                                        stroke={theme.palette.info.light}
+                                        strokeWidth={3}
+                                        dot={{ fill: theme.palette.info.light, r: 7 }}
+                                        activeDot={{ r: 9 }}
+                                        name="Satisfaction Score"
+                                        isAnimationActive={true}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </Paper>
+                    </Grid>
+
+                    {/* Insights and Interpretations Box */}
+                    <Grid item xs={12} sx={{ mt: 2 }}>
+                        <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid rgba(255,255,255,0.05)', bgcolor: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(10px)' }}>
+                            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, color: theme.palette.primary.light, fontSize: 18, textAlign: 'center' }}>Insights&Interpretations</Typography>
+                            <Typography variant="body2" sx={{ mb: 3, color: theme.palette.text.secondary, lineHeight: 1.6 }}>
+                                Leveraging the interactive filters above, we can dive deep into how AI tool usage correlates with student study habits, stress levels, and satisfaction across different demographics. Here are some key interpretations:
+                            </Typography>
+                            <Stack spacing={2}>
+                                <Box>
+                                    <Typography variant="body2" sx={{ mb: 1, color: theme.palette.info.light, fontWeight: 600 }}>
+                                        📊 Learner Group Comparison
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.6, ml: 2 }}>
+                                        This chart provides a direct, side-by-side comparison of AI-Integrated Learners versus Traditional Learners. Observe differences in average GPA, total study time, AI usage hours, and the proportion of study time dedicated to AI. For instance, do AI users achieve higher GPAs with less overall study time, suggesting increased efficiency?
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" sx={{ mb: 1, color: theme.palette.error.light, fontWeight: 600 }}>
+                                        🎯 AI Usage vs. Stress & Satisfaction
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary, lineHeight: 1.6, ml: 2 }}>
+                                        This curve chart clearly illustrates how average stress levels and average satisfaction scores change across different brackets of AI Usage Hours per Week. Look for trends: Does moderate AI usage lead to higher satisfaction and lower stress, while very high usage potentially correlates with increased stress or diminished returns?
+                                    </Typography>
+                                </Box>
+                                <Box>
+                                    <Typography variant="body2" sx={{ color: theme.palette.warning.light, fontWeight: 600 }}>
+                                        💡 Explore the filters to uncover nuanced patterns across countries, majors, and specific AI tools.
+                                    </Typography>
+                                </Box>
+                            </Stack>
+                        </Paper>
+                    </Grid>
                 </Grid>
-            </Grid>
+            </Box>
         </Box>
-      </Box>
     );
-}   
+}
