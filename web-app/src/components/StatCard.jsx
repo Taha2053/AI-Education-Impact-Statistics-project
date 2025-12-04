@@ -31,14 +31,19 @@ export default function StatCard({ title, value, trend, trendValue, icon: Icon, 
                 height: '100%',
                 position: 'relative',
                 overflow: 'hidden',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                border: '1px solid transparent',
+                transition: 'border-color 0.3s ease',
+                '&:hover': {
+                    borderColor: iconColor
+                }
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
             whileHover={{
                 y: -6,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+                boxShadow: `0 12px 40px ${iconColor}25`,
                 transition: { duration: 0.2 }
             }}
         >

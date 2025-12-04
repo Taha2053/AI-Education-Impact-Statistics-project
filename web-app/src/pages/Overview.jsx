@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Typography, Grid, Box, useTheme, Chip, Paper, FormControl, InputLabel, Select, MenuItem, Button } from '@mui/material';
-import { Users, Brain, BookOpen, GraduationCap, TrendingUp, Award, X } from 'lucide-react';
+import { Users, Brain, BookOpen, GraduationCap, TrendingUp, Award, X, Lightbulb, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import { useData } from '../context/DataContext';
@@ -243,13 +243,45 @@ export default function Overview() {
   return (
     <Box sx={{ pb: 5 }}>
       {/* ✨ Page Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ mb: 1, fontWeight: 700 }}>
-          Overview Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Comprehensive summary of AI impact on education across all regions
-        </Typography>
+      <Box sx={{
+        mb: 4,
+        p: 4,
+        borderRadius: 4,
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(236, 72, 153, 0.06) 100%)',
+        border: '1px solid rgba(99, 102, 241, 0.15)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Box sx={{
+              p: 1.5,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              display: 'flex',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+            }}>
+              <LayoutDashboard size={28} color="white" />
+            </Box>
+            <Typography variant="h4" sx={{ fontWeight: 700, background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              Overview Dashboard
+            </Typography>
+          </Box>
+          <Typography variant="body1" sx={{ color: 'text.secondary', ml: 7 }}>
+            Comprehensive summary of AI impact on education across all regions
+          </Typography>
+        </Box>
+        {/* Decorative gradient orb */}
+        <Box sx={{
+          position: 'absolute',
+          right: -50,
+          top: -50,
+          width: 200,
+          height: 200,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
+          filter: 'blur(40px)'
+        }} />
       </Box>
 
       {/* 🎯 Interactive Filters */}
@@ -258,18 +290,53 @@ export default function Overview() {
           p: 3,
           mb: 4,
           borderRadius: 4,
-          border: '1px solid rgba(255,255,255,0.05)',
-          background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`
+          border: '1px solid rgba(99, 102, 241, 0.2)',
+          background: `linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 50%, ${theme.palette.background.paper} 100%)`,
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 8px 32px rgba(99, 102, 241, 0.1)',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 12px 40px rgba(99, 102, 241, 0.15)'
+          }
         }}
       >
+        {/* Filter Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{
+            p: 1,
+            borderRadius: 2,
+            bgcolor: 'rgba(99, 102, 241, 0.15)',
+            mr: 1.5,
+            display: 'flex'
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+          </Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#6366f1' }}>
+            Filter Data
+          </Typography>
+        </Box>
+
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Country/Region</InputLabel>
+            <InputLabel sx={{ '&.Mui-focused': { color: '#6366f1' } }}>Country/Region</InputLabel>
             <Select
               value={selectedCountry}
               label="Country/Region"
               onChange={(e) => setSelectedCountry(e.target.value)}
-              sx={{ transition: 'all 0.3s ease' }}
+              sx={{
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(99, 102, 241, 0.5)'
+                  }
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#6366f1'
+                }
+              }}
             >
               <MenuItem value="all">All Countries</MenuItem>
               {uniqueCountries.map(country => (
@@ -279,12 +346,22 @@ export default function Overview() {
           </FormControl>
 
           <FormControl sx={{ minWidth: 200 }}>
-            <InputLabel>Field of Study</InputLabel>
+            <InputLabel sx={{ '&.Mui-focused': { color: '#8b5cf6' } }}>Field of Study</InputLabel>
             <Select
               value={selectedFieldOfStudy}
               label="Field of Study"
               onChange={(e) => setSelectedFieldOfStudy(e.target.value)}
-              sx={{ transition: 'all 0.3s ease' }}
+              sx={{
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(139, 92, 246, 0.5)'
+                  }
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: '#8b5cf6'
+                }
+              }}
             >
               <MenuItem value="all">All Fields</MenuItem>
               {uniqueFieldsOfStudy.map(field => (
@@ -307,10 +384,14 @@ export default function Overview() {
                 size="small"
                 sx={{
                   textTransform: 'none',
+                  borderColor: 'rgba(239, 68, 68, 0.5)',
+                  color: '#ef4444',
                   transition: 'all 0.3s ease',
                   '&:hover': {
                     transform: 'translateY(-2px)',
-                    boxShadow: 2
+                    borderColor: '#ef4444',
+                    bgcolor: 'rgba(239, 68, 68, 0.1)',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
                   }
                 }}
               >
@@ -319,7 +400,7 @@ export default function Overview() {
             </motion.div>
           )}
 
-          {/* Active Filter Chip */}
+          {/* Active Filter Chips */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', ml: 'auto' }}>
             {selectedCountry !== 'all' && (
               <motion.div
@@ -329,10 +410,19 @@ export default function Overview() {
                 transition={{ duration: 0.2 }}
               >
                 <Chip
-                  label={`Country: ${selectedCountry}`}
+                  label={`🌍 ${selectedCountry}`}
                   onDelete={() => setSelectedCountry('all')}
-                  color="primary"
-                  variant="outlined"
+                  sx={{
+                    bgcolor: 'rgba(99, 102, 241, 0.15)',
+                    color: '#6366f1',
+                    borderColor: 'rgba(99, 102, 241, 0.3)',
+                    border: '1px solid',
+                    fontWeight: 500,
+                    '& .MuiChip-deleteIcon': {
+                      color: '#6366f1',
+                      '&:hover': { color: '#4f46e5' }
+                    }
+                  }}
                 />
               </motion.div>
             )}
@@ -344,10 +434,19 @@ export default function Overview() {
                 transition={{ duration: 0.2 }}
               >
                 <Chip
-                  label={`Field: ${selectedFieldOfStudy}`}
+                  label={`📚 ${selectedFieldOfStudy}`}
                   onDelete={() => setSelectedFieldOfStudy('all')}
-                  color="primary"
-                  variant="outlined"
+                  sx={{
+                    bgcolor: 'rgba(139, 92, 246, 0.15)',
+                    color: '#8b5cf6',
+                    borderColor: 'rgba(139, 92, 246, 0.3)',
+                    border: '1px solid',
+                    fontWeight: 500,
+                    '& .MuiChip-deleteIcon': {
+                      color: '#8b5cf6',
+                      '&:hover': { color: '#7c3aed' }
+                    }
+                  }}
                 />
               </motion.div>
             )}
@@ -355,9 +454,18 @@ export default function Overview() {
         </Box>
 
         {/* Results Count */}
-        <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-          Showing {totalStudents} of {data.students.length} students
-        </Typography>
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            bgcolor: '#10b981',
+            animation: 'pulse 2s infinite'
+          }} />
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Showing <span style={{ color: '#10b981', fontWeight: 600 }}>{totalStudents}</span> of {data.students.length} students
+          </Typography>
+        </Box>
       </Paper>
 
       {/* 📊 Key Metrics / Summary Cards */}
@@ -370,20 +478,20 @@ export default function Overview() {
           exit="exit"
           transition={{ duration: 0.3 }}
         >
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={2.4}>
+          <Grid container spacing={3} sx={{ mb: 4, display: 'flex', flexWrap: 'nowrap' }}>
+            <Grid item xs={12} sm={6} md={2.4} sx={{ flex: 1, minWidth: 0 }}>
               <StatCard title="Total Students" value={totalStudents} icon={Users} trend="up" trendValue="+12%" />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md={2.4} sx={{ flex: 1, minWidth: 0 }}>
               <StatCard title="Avg. GPA" value={avgGpa} icon={GraduationCap} trend="up" trendValue="+0.2" />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md={2.4} sx={{ flex: 1, minWidth: 0 }}>
               <StatCard title="Avg. AI Usage (Hrs)" value={avgAiUsage} icon={Brain} trend="up" trendValue="+2.5" />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md={2.4} sx={{ flex: 1, minWidth: 0 }}>
               <StatCard title="Study Hours/Week" value={avgStudyHours} icon={BookOpen} trend="down" trendValue="-1.2" />
             </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid item xs={12} sm={6} md={2.4} sx={{ flex: 1, minWidth: 0 }}>
               <StatCard title="Most Popular Tool" value={mostPopularTool} icon={Award} />
             </Grid>
           </Grid>
@@ -392,16 +500,38 @@ export default function Overview() {
 
       {/* 📈 Correlation Indicator */}
       <Box sx={{ mb: 4 }}>
-        <Chip
-          label={`AI–GPA Correlation: ${correlation} (${correlationIndicator.text})`}
-          sx={{
-            p: 2,
-            fontSize: '16px',
+        <Paper sx={{
+          p: 3,
+          borderRadius: 4,
+          background: `linear-gradient(135deg, ${correlationIndicator.color}15 0%, ${theme.palette.background.paper} 100%)`,
+          border: `1px solid ${correlationIndicator.color}40`,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 2,
+          boxShadow: `0 4px 20px ${correlationIndicator.color}20`,
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: `0 8px 30px ${correlationIndicator.color}30`
+          }
+        }}>
+          <Box sx={{
+            p: 1.5,
             borderRadius: 2,
-            backgroundColor: correlationIndicator.color,
-            color: '#fff'
-          }}
-        />
+            bgcolor: `${correlationIndicator.color}20`,
+            display: 'flex'
+          }}>
+            <TrendingUp size={24} color={correlationIndicator.color} />
+          </Box>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+              AI–GPA Correlation
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: correlationIndicator.color }}>
+              {correlation} ({correlationIndicator.text})
+            </Typography>
+          </Box>
+        </Paper>
       </Box>
 
       {/* 📊 Global Trends / Mini Charts */}
@@ -420,20 +550,26 @@ export default function Overview() {
               <Paper sx={{
                 p: 3,
                 borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.15)',
                 height: '100%',
                 width: '100%',
                 minHeight: 380,
                 transition: 'all 0.3s ease',
-                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(99, 102, 241, 0.03) 100%)`,
+                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(99, 102, 241, 0.05) 100%)`,
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+                  boxShadow: '0 12px 40px rgba(99, 102, 241, 0.15)',
+                  border: '1px solid rgba(99, 102, 241, 0.25)'
                 }
               }}>
-                <Typography variant="h6" sx={{ mb: 2, fontSize: '1rem', fontWeight: 600 }}>
-                  GPA vs AI Usage
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(99, 102, 241, 0.1)' }}>
+                    <TrendingUp size={20} color="#6366f1" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                    GPA vs AI Usage
+                  </Typography>
+                </Box>
                 <Box sx={{ height: 300 }}>
                   <Plot
                     data={[{
@@ -479,20 +615,26 @@ export default function Overview() {
               <Paper sx={{
                 p: 3,
                 borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(16, 185, 129, 0.15)',
                 height: '100%',
                 width: '100%',
                 minHeight: 380,
                 transition: 'all 0.3s ease',
-                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(16, 185, 129, 0.03) 100%)`,
+                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(16, 185, 129, 0.05) 100%)`,
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+                  boxShadow: '0 12px 40px rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.25)'
                 }
               }}>
-                <Typography variant="h6" sx={{ mb: 2, fontSize: '1rem', fontWeight: 600 }}>
-                  Study Hours by Region
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(16, 185, 129, 0.1)' }}>
+                    <BookOpen size={20} color="#10b981" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                    Study Hours by Region
+                  </Typography>
+                </Box>
                 <Box sx={{ height: 300 }}>
                   <Plot
                     data={[{
@@ -531,20 +673,26 @@ export default function Overview() {
               <Paper sx={{
                 p: 3,
                 borderRadius: 4,
-                border: '1px solid rgba(255,255,255,0.08)',
+                border: '1px solid rgba(236, 72, 153, 0.15)',
                 height: '100%',
                 width: '100%',
                 minHeight: 380,
                 transition: 'all 0.3s ease',
-                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(236, 72, 153, 0.03) 100%)`,
+                background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(236, 72, 153, 0.05) 100%)`,
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 40px rgba(0,0,0,0.15)'
+                  boxShadow: '0 12px 40px rgba(236, 72, 153, 0.15)',
+                  border: '1px solid rgba(236, 72, 153, 0.25)'
                 }
               }}>
-                <Typography variant="h6" sx={{ mb: 2, fontSize: '1rem', fontWeight: 600 }}>
-                  Major Distribution
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                  <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(236, 72, 153, 0.1)' }}>
+                    <GraduationCap size={20} color="#ec4899" />
+                  </Box>
+                  <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                    Major Distribution
+                  </Typography>
+                </Box>
                 <Box sx={{ height: 300 }}>
                   <Plot
                     data={[{
@@ -593,17 +741,31 @@ export default function Overview() {
           transition={{ duration: 0.3 }}
         >
           <Paper sx={{
-            p: 3,
+            p: 4,
             mb: 4,
             borderRadius: 4,
-            border: '1px solid rgba(255,255,255,0.05)',
+            border: '1px solid rgba(99, 102, 241, 0.15)',
+            background: `linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, ${theme.palette.background.paper} 100%)`,
             transition: 'all 0.3s ease',
             '&:hover': {
               transform: 'translateY(-4px)',
-              boxShadow: 4
+              boxShadow: '0 12px 40px rgba(99, 102, 241, 0.15)',
+              border: '1px solid rgba(99, 102, 241, 0.25)'
             }
           }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}> AI Usage Snapshot </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Box sx={{
+                p: 1.5,
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%)',
+                display: 'flex'
+              }}>
+                <Brain size={24} color="#6366f1" />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#6366f1' }}>
+                AI Usage Snapshot
+              </Typography>
+            </Box>
 
             {/* Row 1: 3 equal cards */}
             <Grid container spacing={3} sx={{ mb: 3, display: 'flex', flexWrap: 'wrap' }}>
@@ -612,16 +774,25 @@ export default function Overview() {
                 <Paper sx={{
                   p: 3,
                   borderRadius: 4,
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.15)',
                   height: 320,
                   width: '100%',
                   transition: 'all 0.3s ease',
-                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(99, 102, 241, 0.03) 100%)`,
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }
+                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(99, 102, 241, 0.05) 100%)`,
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)'
+                  }
                 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 600 }}>
-                    Top AI Tools Usage
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(99, 102, 241, 0.1)' }}>
+                      <Award size={20} color="#6366f1" />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Top AI Tools Usage
+                    </Typography>
+                  </Box>
                   <Box sx={{ height: 260 }}>
                     <Plot
                       data={[{
@@ -656,16 +827,25 @@ export default function Overview() {
                 <Paper sx={{
                   p: 3,
                   borderRadius: 4,
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(139, 92, 246, 0.15)',
                   height: 320,
                   width: '100%',
                   transition: 'all 0.3s ease',
-                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(139, 92, 246, 0.03) 100%)`,
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }
+                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(139, 92, 246, 0.05) 100%)`,
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(139, 92, 246, 0.15)',
+                    border: '1px solid rgba(139, 92, 246, 0.25)'
+                  }
                 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 600 }}>
-                    Tool Purpose
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(139, 92, 246, 0.1)' }}>
+                      <Brain size={20} color="#8b5cf6" />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Tool Purpose
+                    </Typography>
+                  </Box>
                   <Box sx={{ height: 260 }}>
                     <Plot
                       data={[{
@@ -701,16 +881,25 @@ export default function Overview() {
                 <Paper sx={{
                   p: 3,
                   borderRadius: 4,
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.15)',
                   height: 320,
                   width: '100%',
                   transition: 'all 0.3s ease',
-                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(16, 185, 129, 0.03) 100%)`,
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }
+                  background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(16, 185, 129, 0.05) 100%)`,
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)'
+                  }
                 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontWeight: 600, textAlign: 'center' }}>
-                    Skill Level (Satisfaction Score)
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+                    <Box sx={{ p: 1, borderRadius: 2, bgcolor: 'rgba(16, 185, 129, 0.1)' }}>
+                      <TrendingUp size={20} color="#10b981" />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      Skill Level (Satisfaction Score)
+                    </Typography>
+                  </Box>
                   <Box sx={{ height: 260 }}>
                     <Plot
                       data={[{
@@ -754,7 +943,7 @@ export default function Overview() {
                 <Paper sx={{
                   p: 3,
                   borderRadius: 4,
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(99, 102, 241, 0.15)',
                   height: 320,
                   width: '100%',
                   display: 'flex',
@@ -763,13 +952,18 @@ export default function Overview() {
                   justifyContent: 'center',
                   background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(99, 102, 241, 0.05) 100%)`,
                   transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.25)'
+                  }
                 }}>
                   <Box sx={{
                     p: 2,
                     borderRadius: '50%',
                     bgcolor: 'rgba(99, 102, 241, 0.15)',
-                    mb: 2
+                    mb: 2,
+                    boxShadow: '0 0 20px rgba(99, 102, 241, 0.2)'
                   }}>
                     <Users size={32} color="#6366f1" />
                   </Box>
@@ -790,7 +984,7 @@ export default function Overview() {
                 <Paper sx={{
                   p: 3,
                   borderRadius: 4,
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.15)',
                   height: 320,
                   width: '100%',
                   display: 'flex',
@@ -799,8 +993,21 @@ export default function Overview() {
                   justifyContent: 'center',
                   background: `linear-gradient(145deg, ${theme.palette.background.paper} 0%, rgba(16, 185, 129, 0.05) 100%)`,
                   transition: 'all 0.3s ease',
-                  '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 40px rgba(0,0,0,0.15)' }
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 40px rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.25)'
+                  }
                 }}>
+                  <Box sx={{
+                    p: 2,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(16, 185, 129, 0.15)',
+                    mb: 2,
+                    boxShadow: '0 0 20px rgba(16, 185, 129, 0.2)'
+                  }}>
+                    <TrendingUp size={32} color="#10b981" />
+                  </Box>
                   <Typography variant="h2" sx={{ fontWeight: 700, color: '#10b981' }}>
                     {avgAiUsage}
                   </Typography>
@@ -851,12 +1058,25 @@ export default function Overview() {
           <Paper sx={{
             p: 4,
             borderRadius: 4,
-            border: '1px solid rgba(255,255,255,0.05)',
-            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)`
+            border: '1px solid rgba(245, 158, 11, 0.15)',
+            background: `linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, ${theme.palette.background.paper} 100%)`,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(245, 158, 11, 0.15)',
+              border: '1px solid rgba(245, 158, 11, 0.25)'
+            }
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-              <TrendingUp size={28} color={theme.palette.primary.main} />
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+              <Box sx={{
+                p: 1.5,
+                borderRadius: 2,
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.15) 100%)',
+                display: 'flex'
+              }}>
+                <Lightbulb size={24} color="#f59e0b" />
+              </Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b' }}>
                 Key Insights & Interpretations
               </Typography>
             </Box>
@@ -865,14 +1085,29 @@ export default function Overview() {
                 <Box
                   key={index}
                   sx={{
-                    p: 2,
-                    bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                    borderRadius: 2,
-                    borderLeft: `4px solid ${theme.palette.primary.main}`
+                    p: 2.5,
+                    bgcolor: 'rgba(255,255,255,0.02)',
+                    borderRadius: 3,
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    gap: 2,
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      bgcolor: 'rgba(245, 158, 11, 0.05)',
+                      borderColor: 'rgba(245, 158, 11, 0.2)',
+                      transform: 'translateX(4px)'
+                    }
                   }}
                 >
-                  <Typography variant="body1" sx={{ lineHeight: 1.7 }}>
-                    • {insight}
+                  <Box sx={{
+                    minWidth: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    bgcolor: '#f59e0b',
+                    mt: 1
+                  }} />
+                  <Typography variant="body1" sx={{ lineHeight: 1.6, color: 'text.secondary' }}>
+                    {insight}
                   </Typography>
                 </Box>
               ))}
@@ -880,6 +1115,6 @@ export default function Overview() {
           </Paper>
         </motion.div>
       </AnimatePresence>
-    </Box>
+    </Box >
   );
 }

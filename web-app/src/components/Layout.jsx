@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, useTheme, useMediaQuery } from '@mui/material';
-import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight } from 'lucide-react';
+import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const drawerWidth = 280;
@@ -11,6 +11,7 @@ const MENU_ITEMS = [
     { text: 'Performance', icon: <BarChart2 size={20} />, id: 'performance' },
     { text: 'Study Habits', icon: <BookOpen size={20} />, id: 'habits' },
     { text: 'AI Insights', icon: <BrainCircuit size={20} />, id: 'ai' },
+    { text: 'Assistance', icon: <MessageSquare size={20} />, id: 'assistance' },
 ];
 
 export default function Layout({ children, currentView, onViewChange }) {
@@ -48,7 +49,7 @@ export default function Layout({ children, currentView, onViewChange }) {
                         AI Study
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        Analytics Pro
+                        AI Education Impact Statistics
                     </Typography>
                 </Box>
             </Box>
