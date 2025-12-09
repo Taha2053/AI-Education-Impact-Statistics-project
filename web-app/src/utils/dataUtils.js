@@ -125,6 +125,56 @@ export const formatAIUsage = (hours) => {
 };
 
 /**
+ * Format AI tools array for display
+ */
+export const formatAITools = (tools) => {
+    if (!tools || !Array.isArray(tools) || tools.length === 0) return 'None';
+    return tools.filter(Boolean).join(', ');
+};
+
+/**
+ * Format stress level (0-10 scale) with descriptive label
+ */
+export const formatStressLevel = (level) => {
+    if (level === null || level === undefined || isNaN(level)) return 'N/A';
+    const numLevel = parseFloat(level);
+
+    if (numLevel <= 2) return `Low (${numLevel.toFixed(1)}/10)`;
+    if (numLevel <= 5) return `Moderate (${numLevel.toFixed(1)}/10)`;
+    if (numLevel <= 8) return `High (${numLevel.toFixed(1)}/10)`;
+    return `Severe (${numLevel.toFixed(1)}/10)`;
+};
+
+/**
+ * Format boolean fields for display
+ */
+export const formatBoolean = (value) => {
+    if (value === true) return '✓ Yes';
+    if (value === false) return '✗ No';
+    return '— N/A';
+};
+
+/**
+ * Extract unique AI tools from students array (handles ai_tools as array)
+ */
+export const extractAIToolsUnique = (students) => {
+    if (!students || !Array.isArray(students)) return [];
+
+    const toolsSet = new Set();
+    students.forEach(s => {
+        if (s.ai_tools && Array.isArray(s.ai_tools)) {
+            s.ai_tools.forEach(tool => {
+                if (tool && tool !== 'None') {
+                    toolsSet.add(tool);
+                }
+            });
+        }
+    });
+
+    return Array.from(toolsSet).sort();
+};
+
+/**
  * Get country-specific fields
  */
 export const getCountryFields = (country) => {
@@ -141,8 +191,9 @@ export const getCountryFields = (country) => {
 
 /**
  * Downsample large arrays for visualization performance
+ * Updated for larger datasets (27k+ records)
  */
-export const downsampleData = (data, maxPoints = 5000) => {
+export const downsampleData = (data, maxPoints = 1000) => {
     if (!data || data.length <= maxPoints) return data;
 
     const step = Math.ceil(data.length / maxPoints);

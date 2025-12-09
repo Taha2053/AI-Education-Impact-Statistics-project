@@ -19,6 +19,7 @@ import {
 import { motion } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import { useData } from '../context/DataContext';
+import { extractAIToolsUnique, formatAITools, downsampleData } from '../utils/dataUtils';
 import regression from 'regression';
 
 // Constants
@@ -71,13 +72,13 @@ const createTooltip = (student) => {
   const gpa = student.gpa !== null && !isNaN(student.gpa) ? student.gpa.toFixed(2) : 'N/A';
   const studyHours = student.study_hours_per_week || 'N/A';
   const major = student.field_of_study || student.major || 'N/A';
-  const aiTool = student.ai_tool || 'N/A';
+  const aiTools = formatAITools(student.ai_tools);
 
   return `<b>GPA:</b> ${gpa}<br>` +
     `<b>AI Usage:</b> ${student.ai_usage_hours}h/week<br>` +
     `<b>Major:</b> ${major}<br>` +
     `<b>Study Hours:</b> ${studyHours}h/week<br>` +
-    `<b>AI Tool:</b> ${aiTool}<br>` +
+    `<b>AI Tools:</b> ${aiTools}<br>` +
     `<b>Country:</b> ${student.country}`;
 };
 
@@ -152,7 +153,7 @@ export default function Performance() {
     return {
       countries: [...new Set(data.students.map((s) => s.country).filter(Boolean))].sort(),
       majors: [...new Set(data.students.map((s) => s.field_of_study || s.major).filter(Boolean))].sort(),
-      aiTools: [...new Set(data.students.map((s) => s.ai_tool).filter(Boolean))].sort(),
+      aiTools: extractAIToolsUnique(data.students),
     };
   }, [data]);
 
@@ -163,7 +164,9 @@ export default function Performance() {
       const countryMatch = selectedCountry === 'All' || s.country === selectedCountry;
       const studentField = s.field_of_study || s.major;
       const majorMatch = selectedMajor === 'All' || studentField === selectedMajor;
-      const toolMatch = selectedAITool === 'All' || s.ai_tool === selectedAITool;
+      // Handle ai_tools as array
+      const toolMatch = selectedAITool === 'All' ||
+        (s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.includes(selectedAITool));
       return countryMatch && majorMatch && toolMatch;
     });
   }, [data, selectedCountry, selectedMajor, selectedAITool]);
@@ -204,8 +207,17 @@ export default function Performance() {
     countriesToDisplay.forEach((country) => {
       const countryStudents = filteredStudents.filter((s) => s.country === country);
       if (countryStudents.length === 0) return;
-      const x = countryStudents.map((s) => s.ai_usage_hours);
-      const y = countryStudents.map((s) => s.gpa);
+
+      // Filter to only students with valid GPA and AI usage data
+      const validStudents = countryStudents.filter(s =>
+        s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa) &&
+        s.ai_usage_hours !== null && s.ai_usage_hours !== undefined && !isNaN(s.ai_usage_hours)
+      );
+
+      if (validStudents.length === 0) return;
+
+      const x = validStudents.map((s) => s.ai_usage_hours);
+      const y = validStudents.map((s) => s.gpa);
 
       // Scatter plot with color-blind friendly colors
       traces.push({
@@ -213,7 +225,7 @@ export default function Performance() {
         mode: 'markers',
         type: 'scatter',
         name: country,
-        text: countryStudents.map(createTooltip),
+        text: validStudents.map(createTooltip),
         hovertemplate: '%{text}<extra></extra>',
         marker: {
           size: MARKER_SIZE.DEFAULT,
@@ -224,7 +236,7 @@ export default function Performance() {
       });
 
       // Trend line
-      if (countryStudents.length > 1) {
+      if (validStudents.length > 1) {
         const regressionResult = regression.linear(x.map((xi, i) => [xi, y[i]]));
         const minX = Math.min(...x);
         const maxX = Math.max(...x);

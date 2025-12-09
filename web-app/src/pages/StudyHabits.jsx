@@ -3,6 +3,7 @@ import { Typography, Box, Grid, Paper, useTheme, FormControl, InputLabel, Select
 import Plot from 'react-plotly.js';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useData } from '../context/DataContext';
+import { extractAIToolsUnique } from '../utils/dataUtils';
 
 export default function StudyHabits() {
     const { data, loading } = useData();
@@ -19,7 +20,7 @@ export default function StudyHabits() {
         return {
             countries: [...new Set(data.students.map((s) => s.country).filter(Boolean))].sort(),
             majors: [...new Set(data.students.map((s) => s.field_of_study || s.major).filter(Boolean))].sort(),
-            aiTools: [...new Set(data.students.map((s) => s.ai_tool).filter(Boolean))].sort(),
+            aiTools: extractAIToolsUnique(data.students),
         };
     }, [data]);
 
@@ -30,7 +31,9 @@ export default function StudyHabits() {
             const countryMatch = selectedCountry === 'All' || s.country === selectedCountry;
             const studentMajor = s.field_of_study || s.major;
             const majorMatch = selectedMajor === 'All' || studentMajor === selectedMajor;
-            const toolMatch = selectedAITool === 'All' || s.ai_tool === selectedAITool;
+            // Handle ai_tools as array
+            const toolMatch = selectedAITool === 'All' ||
+                (s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.includes(selectedAITool));
             return countryMatch && majorMatch && toolMatch;
         });
     }, [studentData, selectedCountry, selectedMajor, selectedAITool]);
@@ -52,8 +55,12 @@ export default function StudyHabits() {
 
     const aiToolCounts = {};
     filteredStudents.forEach(s => {
-        if (s.ai_tool && s.ai_tool !== 'None') {
-            aiToolCounts[s.ai_tool] = (aiToolCounts[s.ai_tool] || 0) + 1;
+        if (s.ai_tools && Array.isArray(s.ai_tools)) {
+            s.ai_tools.forEach(tool => {
+                if (tool && tool !== 'None') {
+                    aiToolCounts[tool] = (aiToolCounts[tool] || 0) + 1;
+                }
+            });
         }
     });
 
@@ -83,8 +90,14 @@ export default function StudyHabits() {
         return { aiUsage, gpa, studentIds };
     }, [sortedStudents]);
 
-    const aiIntegratedLearners = filteredStudents.filter(s => s.ai_tool && s.ai_tool !== 'None');
-    const traditionalLearners = filteredStudents.filter(s => !s.ai_tool || s.ai_tool === 'None');
+    const aiIntegratedLearners = filteredStudents.filter(s =>
+        s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.length > 0 &&
+        !s.ai_tools.every(tool => tool === 'None')
+    );
+    const traditionalLearners = filteredStudents.filter(s =>
+        !s.ai_tools || !Array.isArray(s.ai_tools) || s.ai_tools.length === 0 ||
+        s.ai_tools.every(tool => tool === 'None')
+    );
 
     const calculateGroupStats = (group) => {
         if (group.length === 0) {
@@ -130,8 +143,12 @@ export default function StudyHabits() {
     const aiToolPreference = useMemo(() => {
         const counts = {};
         filteredStudents.forEach(s => {
-            if (s.ai_tool && s.ai_tool !== 'None') {
-                counts[s.ai_tool] = (counts[s.ai_tool] || 0) + 1;
+            if (s.ai_tools && Array.isArray(s.ai_tools)) {
+                s.ai_tools.forEach(tool => {
+                    if (tool && tool !== 'None') {
+                        counts[tool] = (counts[tool] || 0) + 1;
+                    }
+                });
             }
         });
         const labels = Object.keys(counts);

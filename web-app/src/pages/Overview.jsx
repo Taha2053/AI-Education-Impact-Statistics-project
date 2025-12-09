@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import { useData } from '../context/DataContext';
 import StatCard from '../components/StatCard';
+import { extractAIToolsUnique, downsampleData } from '../utils/dataUtils';
 
 export default function Overview() {
   const { data, loading, countrySummaries } = useData();
@@ -55,12 +56,20 @@ export default function Overview() {
     return (validGPAs.reduce((acc, s) => acc + s.gpa, 0) / validGPAs.length).toFixed(2);
   }, [filteredStudents, totalStudents]);
 
+  const gpaCount = useMemo(() => {
+    return filteredStudents.filter(s => s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa)).length;
+  }, [filteredStudents]);
+
   const avgAiUsage = useMemo(() => {
     if (totalStudents === 0) return '0.0';
     const validUsage = filteredStudents.filter(s => s.ai_usage_hours !== null && !isNaN(s.ai_usage_hours));
     if (validUsage.length === 0) return '0.0';
     return (validUsage.reduce((acc, s) => acc + s.ai_usage_hours, 0) / validUsage.length).toFixed(1);
   }, [filteredStudents, totalStudents]);
+
+  const aiUsageCount = useMemo(() => {
+    return filteredStudents.filter(s => s.ai_usage_hours !== null && !isNaN(s.ai_usage_hours)).length;
+  }, [filteredStudents]);
 
   const avgStudyHours = useMemo(() => {
     if (totalStudents === 0) return '0.0';
@@ -69,11 +78,21 @@ export default function Overview() {
     return (validHours.reduce((acc, s) => acc + s.study_hours_per_week, 0) / validHours.length).toFixed(1);
   }, [filteredStudents, totalStudents]);
 
-  // Most popular AI tool
+  const studyHoursCount = useMemo(() => {
+    return filteredStudents.filter(s => s.study_hours_per_week !== null && !isNaN(s.study_hours_per_week)).length;
+  }, [filteredStudents]);
+
+  // Most popular AI tool (handle ai_tools as array)
   const aiToolCounts = useMemo(() => {
     const tools = {};
     filteredStudents.forEach(s => {
-      tools[s.ai_tool] = (tools[s.ai_tool] || 0) + 1;
+      if (s.ai_tools && Array.isArray(s.ai_tools)) {
+        s.ai_tools.forEach(tool => {
+          if (tool && tool !== 'None') {
+            tools[tool] = (tools[tool] || 0) + 1;
+          }
+        });
+      }
     });
     return tools;
   }, [filteredStudents]);
@@ -84,10 +103,13 @@ export default function Overview() {
     return entries.reduce((max, curr) => curr[1] > max[1] ? curr : max)[0];
   }, [aiToolCounts]);
 
-  // AI usage percentage
+  // AI usage percentage (based on having AI tools, since ai_usage_hours is sparse)
   const aiUsagePercentage = useMemo(() => {
     if (totalStudents === 0) return '0.0';
-    const usingAI = filteredStudents.filter(s => s.ai_usage_hours > 0).length;
+    const usingAI = filteredStudents.filter(s =>
+      (s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.length > 0 && !s.ai_tools.every(t => t === 'None')) ||
+      (s.ai_usage_hours && s.ai_usage_hours > 0)
+    ).length;
     return ((usingAI / totalStudents) * 100).toFixed(1);
   }, [filteredStudents, totalStudents]);
 
@@ -167,6 +189,7 @@ export default function Overview() {
   // Top AI Tools
   const topAITools = useMemo(() => {
     return Object.entries(aiToolCounts)
+      .filter(([tool]) => tool && tool !== 'undefined' && tool !== 'null')
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
   }, [aiToolCounts]);
@@ -182,11 +205,14 @@ export default function Overview() {
 
     filteredStudents.forEach(s => {
       const field = s.field_of_study || s.major || '';
-      if (field.includes('Computer Science') || field.includes('Engineering') || field.includes('Data Science')) {
+      // Ensure field is a string before calling .includes()
+      const fieldStr = typeof field === 'string' ? field : '';
+
+      if (fieldStr.includes('Computer Science') || fieldStr.includes('Engineering') || fieldStr.includes('Data Science')) {
         purposes['Coding']++;
-      } else if (field.includes('Arts') || field.includes('Design')) {
+      } else if (fieldStr.includes('Arts') || fieldStr.includes('Design')) {
         purposes['Creative']++;
-      } else if (field.includes('Medicine') || field.includes('Health') || field.includes('Pharmacy')) {
+      } else if (fieldStr.includes('Medicine') || fieldStr.includes('Health') || fieldStr.includes('Pharmacy')) {
         purposes['Research']++;
       } else {
         purposes['Problem Solving']++;
@@ -400,6 +426,20 @@ export default function Overview() {
         <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
           Showing {totalStudents} of {data.students.length} students
         </Typography>
+
+        {/* Data Quality Info */}
+        {totalStudents > 0 && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(99, 102, 241, 0.1)', borderRadius: 2, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>
+              📊 Data Coverage:
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+              GPA: {gpaCount}/{totalStudents} ({((gpaCount / totalStudents) * 100).toFixed(1)}%) •
+              AI Usage: {aiUsageCount}/{totalStudents} ({((aiUsageCount / totalStudents) * 100).toFixed(1)}%) •
+              Study Hours: {studyHoursCount}/{totalStudents} ({((studyHoursCount / totalStudents) * 100).toFixed(1)}%)
+            </Typography>
+          </Box>
+        )}
       </Paper>
 
       {/* 📊 Key Metrics / Summary Cards */}
@@ -479,8 +519,12 @@ export default function Overview() {
                 <Box sx={{ height: 300 }}>
                   <Plot
                     data={[{
-                      x: filteredStudents.map(s => s.ai_usage_hours),
-                      y: filteredStudents.map(s => s.gpa),
+                      x: filteredStudents
+                        .filter(s => s.ai_usage_hours !== null && s.gpa !== null && !isNaN(s.ai_usage_hours) && !isNaN(s.gpa))
+                        .map(s => s.ai_usage_hours),
+                      y: filteredStudents
+                        .filter(s => s.ai_usage_hours !== null && s.gpa !== null && !isNaN(s.ai_usage_hours) && !isNaN(s.gpa))
+                        .map(s => s.gpa),
                       mode: 'markers',
                       type: 'scatter',
                       marker: {

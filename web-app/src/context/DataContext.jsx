@@ -16,7 +16,7 @@ export function DataProvider({ children }) {
         const loadData = async () => {
             try {
                 setLoadingProgress(10);
-                const response = await fetch('/data_complete.json');
+                const response = await fetch('/unified_students.json');
 
                 if (!response.ok) {
                     throw new Error('Failed to load data');
@@ -26,13 +26,14 @@ export function DataProvider({ children }) {
                 const jsonData = await response.json();
                 setLoadingProgress(70);
 
-                // Validate data structure
-                if (!jsonData.students || !Array.isArray(jsonData.students)) {
+                // Validate data structure - unified_students.json is a flat array
+                if (!Array.isArray(jsonData)) {
                     throw new Error('Invalid data structure');
                 }
 
                 setLoadingProgress(90);
-                setData(jsonData);
+                // Wrap the array in an object for consistency with existing code
+                setData({ students: jsonData });
                 setLoadingProgress(100);
                 setLoading(false);
             } catch (err) {
