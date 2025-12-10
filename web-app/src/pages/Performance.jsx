@@ -19,6 +19,7 @@ import {
 import { motion } from 'framer-motion';
 import Plot from 'react-plotly.js';
 import { useData } from '../context/DataContext';
+import { extractAIToolsUnique, formatAITools, downsampleData } from '../utils/dataUtils';
 import regression from 'regression';
 
 // Constants
@@ -27,12 +28,13 @@ const MARKER_SIZE = { DEFAULT: 8, OUTLIER: 10 };
 const GPA_RANGE = [0, 4.2];
 const OPTIMAL_USAGE_ZONE = { MIN: 8, MAX: 12 };
 
-// Neon Palette for Dark Theme
+// Neon Palette for Dark Theme (Updated for new countries)
 const COUNTRY_COLORS = {
-  India: '#60a5fa',      // Blue
-  Indonesia: '#f87171',  // Red
+  Tunisia: '#60a5fa',    // Blue
   Bangladesh: '#34d399', // Green
-  Turkey: '#c084fc',     // Purple/Pink
+  Egypt: '#f87171',     // Red
+  India: '#c084fc',     // Purple
+  Global: '#f59e0b'     // Orange
 };
 
 
@@ -60,15 +62,23 @@ const calculateRSquared = (actual, predicted) => {
 };
 
 const identifyOutliers = (students) => {
-  return students.filter((s) => s.gpa < OUTLIER_THRESHOLD.MIN_GPA || s.gpa > OUTLIER_THRESHOLD.MAX_GPA);
+  return students.filter((s) => {
+    if (s.gpa === null || s.gpa === undefined || isNaN(s.gpa)) return false;
+    return s.gpa < OUTLIER_THRESHOLD.MIN_GPA || s.gpa > OUTLIER_THRESHOLD.MAX_GPA;
+  });
 };
 
 const createTooltip = (student) => {
-  return `<b>GPA:</b> ${student.gpa.toFixed(2)}<br>` +
+  const gpa = student.gpa !== null && !isNaN(student.gpa) ? student.gpa.toFixed(2) : 'N/A';
+  const studyHours = student.study_hours_per_week || 'N/A';
+  const major = student.field_of_study || student.major || 'N/A';
+  const aiTools = formatAITools(student.ai_tools);
+
+  return `<b>GPA:</b> ${gpa}<br>` +
     `<b>AI Usage:</b> ${student.ai_usage_hours}h/week<br>` +
-    `<b>Major:</b> ${student.major}<br>` +
-    `<b>Study Hours:</b> ${student.study_hours_per_week}h/week<br>` +
-    `<b>AI Tool:</b> ${student.ai_tool}<br>` +
+    `<b>Major:</b> ${major}<br>` +
+    `<b>Study Hours:</b> ${studyHours}h/week<br>` +
+    `<b>AI Tools:</b> ${aiTools}<br>` +
     `<b>Country:</b> ${student.country}`;
 };
 
@@ -141,9 +151,9 @@ export default function Performance() {
   const { countries, majors, aiTools } = useMemo(() => {
     if (!data?.students) return { countries: [], majors: [], aiTools: [] };
     return {
-      countries: [...new Set(data.students.map((s) => s.country))].sort(),
-      majors: [...new Set(data.students.map((s) => s.major))].sort(),
-      aiTools: [...new Set(data.students.map((s) => s.ai_tool))].sort(),
+      countries: [...new Set(data.students.map((s) => s.country).filter(Boolean))].sort(),
+      majors: [...new Set(data.students.map((s) => s.field_of_study || s.major).filter(Boolean))].sort(),
+      aiTools: extractAIToolsUnique(data.students),
     };
   }, [data]);
 
@@ -152,8 +162,11 @@ export default function Performance() {
     if (!data?.students) return [];
     return data.students.filter((s) => {
       const countryMatch = selectedCountry === 'All' || s.country === selectedCountry;
-      const majorMatch = selectedMajor === 'All' || s.major === selectedMajor;
-      const toolMatch = selectedAITool === 'All' || s.ai_tool === selectedAITool;
+      const studentField = s.field_of_study || s.major;
+      const majorMatch = selectedMajor === 'All' || studentField === selectedMajor;
+      // Handle ai_tools as array
+      const toolMatch = selectedAITool === 'All' ||
+        (s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.includes(selectedAITool));
       return countryMatch && majorMatch && toolMatch;
     });
   }, [data, selectedCountry, selectedMajor, selectedAITool]);
@@ -163,15 +176,26 @@ export default function Performance() {
     if (filteredStudents.length === 0) {
       return { correlation: 0, rSquared: 0, avgGPA: 0, avgAIUsage: 0, sampleSize: 0 };
     }
-    const x = filteredStudents.map((s) => s.ai_usage_hours);
-    const y = filteredStudents.map((s) => s.gpa);
+
+    // Filter out students with null GPA or AI usage
+    const validStudents = filteredStudents.filter(s =>
+      s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa) &&
+      s.ai_usage_hours !== null && !isNaN(s.ai_usage_hours)
+    );
+
+    if (validStudents.length === 0) {
+      return { correlation: 0, rSquared: 0, avgGPA: 0, avgAIUsage: 0, sampleSize: 0 };
+    }
+
+    const x = validStudents.map((s) => s.ai_usage_hours);
+    const y = validStudents.map((s) => s.gpa);
     const correlation = calculateCorrelation(x, y);
     const regressionResult = regression.linear(x.map((xi, i) => [xi, y[i]]));
     const predicted = x.map((xi) => regressionResult.predict(xi)[1]);
     const rSquared = calculateRSquared(y, predicted);
     const avgGPA = y.reduce((a, b) => a + b, 0) / y.length;
     const avgAIUsage = x.reduce((a, b) => a + b, 0) / x.length;
-    return { correlation, rSquared, avgGPA, avgAIUsage, sampleSize: filteredStudents.length };
+    return { correlation, rSquared, avgGPA, avgAIUsage, sampleSize: validStudents.length };
   }, [filteredStudents]);
 
   // Memoized plot traces
@@ -183,8 +207,17 @@ export default function Performance() {
     countriesToDisplay.forEach((country) => {
       const countryStudents = filteredStudents.filter((s) => s.country === country);
       if (countryStudents.length === 0) return;
-      const x = countryStudents.map((s) => s.ai_usage_hours);
-      const y = countryStudents.map((s) => s.gpa);
+
+      // Filter to only students with valid GPA and AI usage data
+      const validStudents = countryStudents.filter(s =>
+        s.gpa !== null && s.gpa !== undefined && !isNaN(s.gpa) &&
+        s.ai_usage_hours !== null && s.ai_usage_hours !== undefined && !isNaN(s.ai_usage_hours)
+      );
+
+      if (validStudents.length === 0) return;
+
+      const x = validStudents.map((s) => s.ai_usage_hours);
+      const y = validStudents.map((s) => s.gpa);
 
       // Scatter plot with color-blind friendly colors
       traces.push({
@@ -192,7 +225,7 @@ export default function Performance() {
         mode: 'markers',
         type: 'scatter',
         name: country,
-        text: countryStudents.map(createTooltip),
+        text: validStudents.map(createTooltip),
         hovertemplate: '%{text}<extra></extra>',
         marker: {
           size: MARKER_SIZE.DEFAULT,
@@ -203,7 +236,7 @@ export default function Performance() {
       });
 
       // Trend line
-      if (countryStudents.length > 1) {
+      if (validStudents.length > 1) {
         const regressionResult = regression.linear(x.map((xi, i) => [xi, y[i]]));
         const minX = Math.min(...x);
         const maxX = Math.max(...x);
