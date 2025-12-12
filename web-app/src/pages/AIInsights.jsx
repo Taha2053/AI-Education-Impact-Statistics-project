@@ -1,85 +1,64 @@
 import React, { useState, useMemo } from 'react';
-import { Typography, Box, Grid, Paper, useTheme, MenuItem, Select, FormControl, InputLabel, Chip, Button } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
-import Plot from 'react-plotly.js';
+import { Typography, Box, Grid, useTheme, MenuItem, Select, FormControl, InputLabel, Button, Alert, Chip, Stack } from '@mui/material';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie
+} from 'recharts';
 import { useData } from '../context/DataContext';
-import { X, TrendingUp } from 'lucide-react';
-import { extractAIToolsUnique } from '../utils/dataUtils';
+import { X, TrendingUp, Brain, AlertTriangle, Zap, CheckCircle } from 'lucide-react';
+import { normalizeTool, extractAIToolsUnique } from '../utils/dataUtils';
+import StatCard from '../components/StatCard';
+import ChartCard from '../components/ChartCard';
 
-// Tool normalization map
-const TOOL_ALIASES = {
-    'chatgpt': 'ChatGPT', 'chat gpt': 'ChatGPT', 'chat-gpt': 'ChatGPT', 'chat_gpt': 'ChatGPT',
-    'claude': 'Claude', 'claude ai': 'Claude', 'anthropic claude': 'Claude',
-    'gemini': 'Gemini', 'bard': 'Gemini', 'google bard': 'Gemini',
-    'copilot': 'Copilot', 'co-pilot': 'Copilot', 'co pilot': 'Copilot', 'bing chat': 'Copilot', 'bingchat': 'Copilot',
-    'perplexity': 'Perplexity', 'perplexity ai': 'Perplexity',
-    "google's ai studio models": 'Google AI Studio', 'googlesaistudiomodels': 'Google AI Studio',
-    'grok': 'Grok', 'grok beta': 'Grok',
-    'black box': 'Black Box', 'blackbox': 'Black Box',
+// --- Helper function for Donut Chart Colors (Simplified to 3 Categories) ---
+const getImpactColor = (label) => {
+    if (label === 'Positive') return "#4caf50";    // Primary Green (Positive)
+    if (label === 'Negative') return "#b71c1c";    // Primary Red (Negative)
+    if (label === 'No Impact') return "#9e9e9e";   // Neutral Grey (No Impact)
+    return "#90caf9"; // fallback 
 };
 
-const normalizeTool = (tool) => {
-    if (!tool || tool === 'None') return null;
-    const cleaned = String(tool).trim();
-    if (!cleaned) return null;
-    const lower = cleaned.toLowerCase();
-    if (TOOL_ALIASES[lower]) return TOOL_ALIASES[lower];
-    const sortedEntries = Object.entries(TOOL_ALIASES).sort((a, b) => b[0].length - a[0].length);
-    for (const [key, value] of sortedEntries) {
-        if (lower.includes(key)) return value;
-    }
-    if (cleaned === cleaned.toLowerCase() || cleaned === cleaned.toUpperCase()) {
-        return cleaned.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    }
-    return cleaned;
-};
+// --- Custom Legend Data (Simplified to 3 Categories) ---
+const SIMPLIFIED_SENTIMENT_LABELS = [
+    { name: 'Positive', label: 'Positive Impact' },
+    { name: 'Negative', label: 'Negative Impact' },
+    { name: 'No Impact', label: 'No Impact' },
+];
 
-// Helper: Aggregate data by tool
-const aggregateByTool = (students, selectedTool, getValue, filterValue = () => true) => {
-    const result = {};
-    students.forEach(s => {
-        if (!s.ai_tools || !Array.isArray(s.ai_tools) || s.ai_tools.length === 0) return;
-        s.ai_tools.forEach(tool => {
-            const normalized = normalizeTool(tool);
-            if (normalized && (selectedTool === 'all' || normalized === selectedTool) && filterValue(s)) {
-                if (!result[normalized]) result[normalized] = [];
-                result[normalized].push(getValue(s));
-            }
-        });
-    });
-    return result;
-};
+// --- Custom Legend Component for Simple Horizontal Layout (3 Categories) ---
+const SimplifiedCustomSentimentLegend = ({ labels, getImpactColor, data }) => {
+    // Filter labels to only include those present in the actual data
+    const filteredLabels = labels.filter(item =>
+        data.some(d => d.name === item.name)
+    );
 
-// Helper: Calculate average
-const calculateAverage = (values) => {
-    const valid = values.filter(v => v !== null && v !== undefined && !isNaN(v));
-    return valid.length > 0 ? valid.reduce((sum, v) => sum + v, 0) / valid.length : 0;
-};
-
-// Chart component
-const ChartCard = ({ title, children, delay = 0.1 }) => {
-    const theme = useTheme();
-    const cardVariants = { initial: { opacity: 0, scale: 0.95 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.95 } };
     return (
-        <motion.div variants={cardVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.3, delay }}>
-            <Paper sx={{
-                p: 3, borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)',
-                height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '100%', mx: 'auto',
-                transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: 4 }
-            }}>
-                <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', fontWeight: 600 }}>{title}</Typography>
-                {children}
-            </Paper>
-        </motion.div>
+        <Stack
+            direction="row"
+            flexWrap="wrap"
+            spacing={2}
+            justifyContent="center"
+            sx={{ mt: 2, px: 2, maxWidth: '100%' }}
+        >
+            {filteredLabels.map((entry) => (
+                <Box key={entry.name} sx={{ display: 'flex', alignItems: 'center', fontSize: '0.8rem' }}>
+                    <Box
+                        sx={{
+                            width: 10,
+                            height: 10,
+                            bgcolor: getImpactColor(entry.name),
+                            mr: 1,
+                            borderRadius: '2px',
+                            flexShrink: 0
+                        }}
+                    />
+                    <Typography variant="caption" sx={{ color: 'white', lineHeight: 1.2 }}>
+                        {entry.label}
+                    </Typography>
+                </Box>
+            ))}
+        </Stack>
     );
 };
-
-// Empty state component
-const EmptyState = ({ message }) => (
-    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>{message}</Typography>
-    </Box>
-);
 
 export default function AIInsights() {
     const { data, loading } = useData();
@@ -88,39 +67,15 @@ export default function AIInsights() {
     const [selectedTool, setSelectedTool] = useState('all');
     const [selectedMajor, setSelectedMajor] = useState('all');
 
-    if (loading || !data) return <Typography>Loading...</Typography>;
+    if (loading || !data) return <Box sx={{ p: 4, textAlign: 'center' }}><Typography>Loading Insights...</Typography></Box>;
 
-    // Get unique values
-    const uniqueCountries = useMemo(() => {
-        if (!data?.students) return [];
-        return Array.from(new Set(data.students.map(s => s.country).filter(Boolean))).sort();
-    }, [data]);
-
-    const uniqueTools = useMemo(() => {
-        if (!data?.students) return [];
-        const toolsSet = new Set();
-        data.students.forEach(s => {
-            if (s.ai_tools && Array.isArray(s.ai_tools)) {
-                s.ai_tools.forEach(tool => {
-                    const normalized = normalizeTool(tool);
-                    if (normalized) toolsSet.add(normalized);
-                });
-            }
-        });
-        return Array.from(toolsSet).sort();
-    }, [data]);
-
-    const uniqueMajors = useMemo(() => {
-        if (!data?.students) return [];
-        return Array.from(new Set(data.students.map(s => s.major).filter(Boolean))).sort();
-    }, [data]);
-
-    // Filter students
+    // --- Data Preparation ---
     const filteredStudents = useMemo(() => {
         if (!data?.students) return [];
         return data.students.filter(s => {
             const countryMatch = selectedCountry === 'all' || s.country === selectedCountry;
-            const majorMatch = selectedMajor === 'all' || s.major === selectedMajor;
+            const majorMatch = selectedMajor === 'all' || (s.major || s.field_of_study) === selectedMajor;
+
             let toolMatch = true;
             if (selectedTool !== 'all') {
                 if (!s.ai_tools || !Array.isArray(s.ai_tools) || s.ai_tools.length === 0) {
@@ -129,149 +84,98 @@ export default function AIInsights() {
                     toolMatch = s.ai_tools.some(tool => normalizeTool(tool) === selectedTool);
                 }
             }
-            return countryMatch && toolMatch && majorMatch;
+            return countryMatch && majorMatch && toolMatch;
         });
-    }, [data?.students, selectedCountry, selectedTool, selectedMajor]);
+    }, [data, selectedCountry, selectedTool, selectedMajor]);
 
-    // Aggregate data
-    const tools = useMemo(() => {
-        const result = {};
+    const { countries, majors, toolsList } = useMemo(() => ({
+        countries: Array.from(new Set(data.students?.map(s => s.country))).filter(Boolean).sort(),
+        majors: Array.from(new Set(data.students?.map(s => s.major || s.field_of_study))).filter(Boolean).sort(),
+        toolsList: extractAIToolsUnique(data.students)
+    }), [data]);
+
+    // Data for Recharts
+    const toolUsageData = useMemo(() => {
+        const counts = {};
         filteredStudents.forEach(s => {
-            if (!s.ai_tools || !Array.isArray(s.ai_tools) || s.ai_tools.length === 0) return;
-            s.ai_tools.forEach(tool => {
-                const normalized = normalizeTool(tool);
-                if (normalized && (selectedTool === 'all' || normalized === selectedTool)) {
-                    result[normalized] = (result[normalized] || 0) + 1;
-                }
-            });
+            if (s.ai_tools && Array.isArray(s.ai_tools)) {
+                s.ai_tools.forEach(t => {
+                    const norm = normalizeTool(t);
+                    if (norm) counts[norm] = (counts[norm] || 0) + 1;
+                });
+            }
         });
-        return Object.entries(result).sort((a, b) => b[1] - a[1]);
-    }, [filteredStudents, selectedTool]);
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 10)
+            .map(([name, value]) => ({ name, value }));
+    }, [filteredStudents]);
 
-    const gpaByTool = useMemo(() => 
-        aggregateByTool(filteredStudents, selectedTool, s => s.gpa, s => s.gpa !== null && s.gpa !== undefined),
-        [filteredStudents, selectedTool]
-    );
+    const concernData = useMemo(() => {
+        const counts = {};
+        filteredStudents.forEach(s => {
+            if (s.concerns) counts[s.concerns] = (counts[s.concerns] || 0) + 1;
+        });
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, value]) => ({ name, value }));
+    }, [filteredStudents]);
 
-    const usageByTool = useMemo(() => 
-        aggregateByTool(filteredStudents, selectedTool, s => s.ai_usage_hours, s => s.ai_usage_hours !== null && s.ai_usage_hours !== undefined),
-        [filteredStudents, selectedTool]
-    );
+    // FIX: Aggregate impact data into Positive, Negative, and No Impact
+    const impactData = useMemo(() => {
+        const counts = { 'Positive': 0, 'No Impact': 0, 'Negative': 0 };
 
-    const avgUsageByTool = useMemo(() => {
-        return Object.entries(usageByTool)
-            .map(([tool, hours]) => ({ tool, avgHours: parseFloat(calculateAverage(hours).toFixed(2)) }))
-            .filter(item => item.avgHours > 0)
-            .sort((a, b) => b.avgHours - a.avgHours);
-    }, [usageByTool]);
+        filteredStudents.forEach(s => {
+            // NOTE: Assuming the correct key for impact data is 'ai_impact' as used in prior context, 
+            // but accommodating for 'ai_usage.impact_on_grades' if that was intended.
+            // Using a fallback structure to handle both number/string data types for aggregation.
+            const impactRawValue = s.ai_impact !== undefined && s.ai_impact !== null 
+                ? s.ai_impact 
+                : (s.ai_usage?.impact_on_grades !== undefined && s.ai_usage?.impact_on_grades !== null 
+                    ? s.ai_usage.impact_on_grades 
+                    : null
+                );
+            
+            if (impactRawValue !== null) {
+                let category;
+                const value = typeof impactRawValue === 'string' ? impactRawValue.toLowerCase() : impactRawValue;
 
-    // Scatter plot data
-    const scatterPlotData = useMemo(() => {
-        const colors = [theme.palette.primary.main, theme.palette.secondary.main, theme.palette.success.main, 
-                       theme.palette.warning.main, theme.palette.error.main, theme.palette.info.main];
-        return Object.entries(gpaByTool).map(([tool, gpas], index) => {
-            const validGPAs = gpas.filter(g => g !== null && g !== undefined && !isNaN(g));
-            if (validGPAs.length === 0) return null;
-            return {
-                x: Array(validGPAs.length).fill(tool),
-                y: validGPAs,
-                type: 'scatter',
-                mode: 'markers',
-                name: tool,
-                marker: { color: colors[index % colors.length], size: 8, opacity: 0.7, line: { width: 1, color: 'rgba(255, 255, 255, 0.2)' } }
-            };
-        }).filter(Boolean);
-    }, [gpaByTool, theme]);
-
-    // Insights
-    const insights = useMemo(() => {
-        const insightsList = [];
-        if (tools.length === 0) return [{ title: 'Info', text: 'No AI tool data available for the selected filters.' }];
-
-        if (tools.length > 0) {
-            const [tool, count] = tools[0];
-            const total = tools.reduce((sum, [, c]) => sum + c, 0);
-            insightsList.push({
-                title: 'Most Popular AI Tool',
-                text: `${tool} is the most widely used AI tool among the filtered students, with ${count} users (${((count / total) * 100).toFixed(1)}% of total).`
-            });
-        }
-
-        const toolGPAs = Object.entries(gpaByTool)
-            .map(([tool, gpas]) => {
-                const avg = calculateAverage(gpas);
-                return avg > 0 ? { tool, avgGPA: avg, count: gpas.length } : null;
-            })
-            .filter(Boolean)
-            .sort((a, b) => b.avgGPA - a.avgGPA);
-
-        if (toolGPAs.length > 0) {
-            const { tool, avgGPA, count } = toolGPAs[0];
-            insightsList.push({
-                title: 'Highest Average GPA',
-                text: `Students using ${tool} have the highest average GPA of ${avgGPA.toFixed(2)} (based on ${count} students).`
-            });
-        }
-
-        if (avgUsageByTool.length > 0) {
-            const { tool, avgHours } = avgUsageByTool[0];
-            insightsList.push({
-                title: 'Highest Usage Hours',
-                text: `${tool} users spend the most time with AI tools, averaging ${avgHours} hours per week.`
-            });
-        }
-
-        const multiToolCount = filteredStudents.filter(s => s.ai_tools && Array.isArray(s.ai_tools) && s.ai_tools.length > 1).length;
-        if (multiToolCount > 0) {
-            const percentage = ((multiToolCount / filteredStudents.length) * 100).toFixed(1);
-            insightsList.push({
-                title: 'Multi-Tool Usage',
-                text: `${multiToolCount} students (${percentage}%) use multiple AI tools, indicating diverse tool adoption strategies.`
-            });
-        }
-
-        if (toolGPAs.length > 1) {
-            const gpaRange = toolGPAs.map(t => t.avgGPA);
-            const spread = (Math.max(...gpaRange) - Math.min(...gpaRange)).toFixed(2);
-            insightsList.push({
-                title: parseFloat(spread) > 0.1 ? 'GPA Variation Across Tools' : 'Consistent Academic Performance',
-                text: parseFloat(spread) > 0.1
-                    ? `There is a ${spread} point difference in average GPA between different AI tools, suggesting varying effectiveness or user demographics.`
-                    : `Students using different AI tools show similar average GPAs, indicating that tool choice may not significantly impact academic performance.`
-            });
-        }
-
-        if (avgUsageByTool.length > 1) {
-            const usageRange = avgUsageByTool.map(t => t.avgHours);
-            const spread = (Math.max(...usageRange) - Math.min(...usageRange)).toFixed(1);
-            if (parseFloat(spread) > 5) {
-                insightsList.push({
-                    title: 'Varied Usage Patterns',
-                    text: `Usage hours vary significantly across tools (${Math.min(...usageRange).toFixed(1)} to ${Math.max(...usageRange).toFixed(1)} hours/week), reflecting different use cases and integration levels.`
-                });
+                if (typeof value === 'number') {
+                    if (value > 0) category = 'Positive';
+                    else if (value < 0) category = 'Negative';
+                    else category = 'No Impact';
+                } else if (typeof value === 'string') {
+                    if (value.includes('positive') || Number(value) > 0) category = 'Positive';
+                    else if (value.includes('negative') || Number(value) < 0) category = 'Negative';
+                    else category = 'No Impact';
+                }
+                
+                if (category) counts[category] += 1;
             }
-        }
+        });
 
-        if (selectedTool !== 'all') {
-            const toolData = tools.find(t => t[0] === selectedTool);
-            if (toolData) {
-                const usage = avgUsageByTool.find(t => t.tool === selectedTool);
-                insightsList.push({
-                    title: 'Selected Tool Analysis',
-                    text: `Focusing on ${selectedTool}: ${toolData[1]} students use this tool.${usage ? ` Average usage: ${usage.avgHours} hours/week.` : ''}`
-                });
-            }
-        }
+        // Convert counts to array format required by Recharts
+        return Object.entries(counts)
+            .map(([name, value]) => ({ name, value }))
+            .filter(item => item.value > 0);
+    }, [filteredStudents]);
 
-        if (selectedCountry !== 'all') {
-            insightsList.push({
-                title: 'Geographic Context',
-                text: `Analysis focused on students from ${selectedCountry}, providing region-specific insights into AI tool adoption patterns.`
-            });
-        }
+    // Update keymetrics to use aggregated impact data
+    const keymetrics = useMemo(() => {
+        // Find the positive count directly from the new aggregated data structure
+        const positiveImpactCount = impactData.find(item => item.name === 'Positive')?.value || 0;
 
-        return insightsList;
-    }, [tools, gpaByTool, avgUsageByTool, filteredStudents, selectedTool, selectedCountry]);
+        const totalStudents = filteredStudents.length;
+
+        return {
+            totalStudents: totalStudents,
+            topTool: toolUsageData.length > 0 ? toolUsageData[0].name : 'N/A',
+            dominantConcern: concernData.length > 0 ? concernData[0].name : 'None',
+            // Use the positive count directly for the percentage calculation
+            positiveImpactPercentage: totalStudents > 0 ? (positiveImpactCount / totalStudents * 100) : 0
+        }
+    }, [filteredStudents, toolUsageData, concernData, impactData]);
 
     const clearFilters = () => {
         setSelectedCountry('all');
@@ -279,144 +183,258 @@ export default function AIInsights() {
         setSelectedMajor('all');
     };
 
-    const hasActiveFilters = selectedCountry !== 'all' || selectedTool !== 'all' || selectedMajor !== 'all';
-    const commonLayout = { autosize: true, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: { color: theme.palette.text.secondary } };
-    const commonXAxis = { title: { text: 'AI Tool', standoff: 15 }, tickangle: -45 };
-
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }}>
-            <Box sx={{ maxWidth: 1400, mx: 'auto' }}>
-                <Typography variant="h3" sx={{
-                    mb: 4, fontWeight: 800, textAlign: 'center', maxWidth: 700, mx: 'auto',
-                    background: 'linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%)',
-                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                }}>
-                    Overview of how students use different AI tools
+        <Box sx={{ pb: 5 }}>
+            {/* Header */}
+            <Box sx={{ mb: 4 }}>
+                <Typography
+                    variant="h3"
+                    fontWeight={800}
+                    gutterBottom
+                    sx={{
+                        color: "#FFFFFF",
+                        mb: 1,
+                        textAlign: "left"
+                    }}
+                >
+                    AI Adoption Landscape
                 </Typography>
-
-                {/* Filters */}
-                <Box sx={{ mb: 3 }}>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-                        {[
-                            { value: selectedCountry, onChange: setSelectedCountry, label: 'Country', options: uniqueCountries },
-                            { value: selectedMajor, onChange: setSelectedMajor, label: 'Major', options: uniqueMajors },
-                            { value: selectedTool, onChange: setSelectedTool, label: 'AI Tool', options: uniqueTools }
-                        ].map(({ value, onChange, label, options }) => (
-                            <FormControl key={label} sx={{ minWidth: 200 }}>
-                                <InputLabel>{label}</InputLabel>
-                                <Select value={value} label={label} onChange={(e) => onChange(e.target.value)} sx={{ transition: 'all 0.3s ease' }}>
-                                    <MenuItem value="all">All {label}s</MenuItem>
-                                    {options.map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}
-                                </Select>
-                            </FormControl>
-                        ))}
-
-                        {hasActiveFilters && (
-                            <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.2 }}>
-                                <Button onClick={clearFilters} startIcon={<X size={16} />} variant="outlined" size="small"
-                                    sx={{ textTransform: 'none', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-2px)', boxShadow: 2 } }}>
-                                    Clear Filters
-                                </Button>
-                            </motion.div>
-                        )}
-
-                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', ml: 'auto' }}>
-                            {[
-                                { value: selectedCountry, setter: setSelectedCountry, label: 'Country', color: 'primary' },
-                                { value: selectedMajor, setter: setSelectedMajor, label: 'Major', color: 'success' },
-                                { value: selectedTool, setter: setSelectedTool, label: 'Tool', color: undefined }
-                            ].map(({ value, setter, label, color }) => value !== 'all' && (
-                                <motion.div key={label} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.2 }}>
-                                    <Chip label={`${label}: ${value}`} onDelete={() => setter('all')} color={color} variant="outlined"
-                                        sx={!color ? { color: '#ffffff', borderColor: '#ffffff', '& .MuiChip-deleteIcon': { color: '#ffffff' }, '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } } : {}} />
-                                </motion.div>
-                            ))}
-                        </Box>
-                    </Box>
-                    <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
-                        Showing {filteredStudents.length} of {data?.students?.length || 0} students
-                    </Typography>
-                </Box>
-
-                {/* Charts */}
-                <AnimatePresence mode="wait">
-                    <Grid container spacing={3} key={`${selectedCountry}-${selectedTool}-${selectedMajor}`} justifyContent="center">
-                        <Grid item xs={12} md={10} lg={5}>
-                            <ChartCard title="Most Popular AI Tools" delay={0.1}>
-                                <Box sx={{ flex: 1, minHeight: '400px' }}>
-                                    {tools.length > 0 ? (
-                                        <Plot data={[{
-                                            x: tools.map(t => t[0]),
-                                            y: tools.map(t => t[1]),
-                                            type: 'bar',
-                                            marker: { color: tools.map((_, i) => i === 0 ? theme.palette.primary.main : theme.palette.primary.dark) }
-                                        }]} layout={{ ...commonLayout, xaxis: commonXAxis, yaxis: { title: { text: 'Number of Users' } },
-                                            margin: { t: 10, r: 20, l: 60, b: 100 }, transition: { duration: 500, easing: 'cubic-in-out' } }}
-                                            useResizeHandler style={{ width: '100%', height: '100%' }} config={{ displayModeBar: false }} />
-                                    ) : <EmptyState message="No AI tools data available for the selected filters" />}
-                                </Box>
-                            </ChartCard>
-                        </Grid>
-
-                        <Grid item xs={12} md={10} lg={5}>
-                            <ChartCard title="AI Usage Hours by Tool" delay={0.2}>
-                                <Box sx={{ flex: 1, minHeight: '400px' }}>
-                                    {avgUsageByTool.length > 0 ? (
-                                        <Plot data={[{
-                                            x: avgUsageByTool.map(t => t.tool),
-                                            y: avgUsageByTool.map(t => t.avgHours),
-                                            type: 'bar',
-                                            marker: { color: '#ffffff' },
-                                            text: avgUsageByTool.map(t => `${t.avgHours} hrs`),
-                                            textposition: 'outside'
-                                        }]} layout={{ ...commonLayout, xaxis: commonXAxis, yaxis: { title: { text: 'Average Usage Hours per Week' } },
-                                            margin: { t: 10, r: 20, l: 60, b: 100 }, transition: { duration: 500, easing: 'cubic-in-out' } }}
-                                            useResizeHandler style={{ width: '100%', height: '100%' }} config={{ displayModeBar: false }} />
-                                    ) : <EmptyState message="No usage hours data available for the selected filters" />}
-                                </Box>
-                            </ChartCard>
-                        </Grid>
-
-                        <Grid item xs={12} md={10} lg={10}>
-                            <ChartCard title="Correlation Between GPA and AI Tools" delay={0.3}>
-                                <Box sx={{ minHeight: '450px' }}>
-                                    {scatterPlotData.length > 0 ? (
-                                        <Plot data={scatterPlotData} layout={{ ...commonLayout, xaxis: { ...commonXAxis, type: 'category' },
-                                            yaxis: { title: { text: 'GPA' }, range: [0, 4] }, showlegend: false,
-                                            margin: { t: 10, r: 20, l: 60, b: 100 }, transition: { duration: 500, easing: 'cubic-in-out' } }}
-                                            useResizeHandler style={{ width: '100%', height: '100%' }} config={{ displayModeBar: false }} />
-                                    ) : <EmptyState message="No GPA data available for the selected filters" />}
-                                </Box>
-                            </ChartCard>
-                        </Grid>
-                    </Grid>
-                </AnimatePresence>
-
-                {/* Insights */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.4 }}>
-                    <Paper sx={{ p: 4, mt: 3, borderRadius: 4, border: '1px solid rgba(255,255,255,0.05)',
-                        background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.action.hover} 100%)` }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-                            <TrendingUp size={28} color={theme.palette.primary.main} />
-                            <Typography variant="h5" sx={{ fontWeight: 700 }}>Key Insights & Interpretations</Typography>
-                        </Box>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {insights.length > 0 ? insights.map((insight, index) => (
-                                <Box key={index} sx={{ p: 2, bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                                    borderRadius: 2, borderLeft: `4px solid ${theme.palette.primary.main}` }}>
-                                    <Typography variant="body1" sx={{ lineHeight: 1.7 }}>
-                                        <Box component="span" sx={{ fontWeight: 600, color: theme.palette.primary.light }}>{insight.title}:</Box> {insight.text}
-                                    </Typography>
-                                </Box>
-                            )) : (
-                                <Typography variant="body1" sx={{ color: 'text.secondary', textAlign: 'center', fontStyle: 'italic', py: 4, opacity: 0.7 }}>
-                                    No insights available for the selected filters. Try adjusting your filters to see insights.
-                                </Typography>
-                            )}
-                        </Box>
-                    </Paper>
-                </motion.div>
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        color: 'text.secondary',
+                        maxWidth: 600,
+                        textAlign: "left"
+                    }}
+                >
+                    Deep dive into how specialized tools are reshaping the academic experience for {filteredStudents.length} students.
+                </Typography>
             </Box>
-        </motion.div>
+
+            {/* Filters */}
+            <Box sx={{
+                p: 2,
+                mb: 4,
+                borderRadius: 3,
+                bgcolor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 2,
+                justifyContent: 'flex-start',
+                alignItems: 'center'
+            }}>
+                {[
+                    { label: 'Country', val: selectedCountry, set: setSelectedCountry, opts: countries },
+                    { label: 'Major', val: selectedMajor, set: setSelectedMajor, opts: majors },
+                    { label: 'Tool', val: selectedTool, set: setSelectedTool, opts: toolsList }
+                ].map((f, i) => (
+                    <FormControl key={i} size="small" sx={{ minWidth: 150 }}>
+                        <InputLabel>{f.label}</InputLabel>
+                        <Select value={f.val} label={f.label} onChange={e => f.set(e.target.value)}>
+                            <MenuItem value="all">All</MenuItem>
+                            {f.opts.map(o => <MenuItem key={o} value={o}>{o}</MenuItem>)}
+                        </Select>
+                    </FormControl>
+                ))}
+                {(selectedCountry !== 'all' || selectedMajor !== 'all' || selectedTool !== 'all') && (
+                    <Button variant="outlined" color="error" startIcon={<X size={16} />} onClick={clearFilters}>
+                        Clear
+                    </Button>
+                )}
+            </Box>
+
+            {/* Quick Stats Row */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Top AI Tool"
+                        value={keymetrics.topTool}
+                        icon={Brain}
+                        color={theme.palette.primary.main}
+                        delay={0}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Active Students"
+                        value={keymetrics.totalStudents.toLocaleString()}
+                        icon={Zap}
+                        color={theme.palette.secondary.main}
+                        delay={0.1}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Top Concern"
+                        value={keymetrics.dominantConcern.substring(0, 15) + (keymetrics.dominantConcern.length > 15 ? '...' : '')}
+                        icon={AlertTriangle}
+                        color={theme.palette.warning.main}
+                        delay={0.2}
+                    />
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <StatCard
+                        title="Positive Impact"
+                        value={`${keymetrics.positiveImpactPercentage.toFixed(0)}%`}
+                        icon={TrendingUp}
+                        color={theme.palette.success.main}
+                        subtext="Sentiment"
+                        delay={0.3}
+                    />
+                </Grid>
+            </Grid>
+
+            {/* Visuals */}
+            <Grid container spacing={4} sx={{ mb: 4 }}>
+                {/* 1. Market Share (Vertical Bar) */}
+                <Grid item xs={12} md={8}>
+                    <ChartCard title="Market Share: AI Tools" subtitle="Adoption by Tool Name">
+                        <ResponsiveContainer width="100%" height={400}>
+                            <BarChart data={toolUsageData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" tick={{ fontSize: 12 }} interval={0} angle={-30} textAnchor="end" />
+                                <YAxis stroke="rgba(255,255,255,0.5)" />
+                                <Tooltip contentStyle={{ borderRadius: 12, bgcolor: '#000', border: '1px solid rgba(255,255,255,0.1)' }} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                                <Bar dataKey="value" name="Students" radius={[4, 4, 0, 0]} animationDuration={1500}>
+                                    {toolUsageData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={index === 0 ? theme.palette.primary.main : theme.palette.primary.dark} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </ChartCard>
+                </Grid>
+
+                {/* 2. Sentiment (Donut) - Simplified Data and Legend */}
+                <Grid item xs={12} md={4}>
+                    <ChartCard title="Student Sentiment" subtitle="Perceived Impact (Aggregated)">
+                        <Box sx={{ position: 'relative', width: '100%', height: 280 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={impactData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        nameKey="name" // Use the category name for slices
+                                        animationDuration={1500}
+                                    >
+                                        {/* Cell mapping uses the simplified getImpactColor */}
+                                        {impactData.map((entry, index) => (
+                                            <Cell key={index} fill={getImpactColor(entry.name)} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip contentStyle={{ borderRadius: 12, bgcolor: '#000', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            {/* Center Text */}
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    textAlign: 'center',
+                                    pointerEvents: 'none'
+                                }}
+                            >
+                                <Typography variant="h4" fontWeight={700}>
+                                    {keymetrics.totalStudents}
+                                </Typography>
+                                <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                                    Total Students
+                                </Typography>
+                            </Box>
+                        </Box>
+
+                        {/* SIMPLIFIED CUSTOM LEGEND */}
+                        <SimplifiedCustomSentimentLegend
+                            labels={SIMPLIFIED_SENTIMENT_LABELS}
+                            getImpactColor={getImpactColor}
+                            data={impactData}
+                        />
+
+                    </ChartCard>
+                </Grid>
+
+                {/* 3. Concerns (Text List) */}
+                <Grid item xs={12}>
+                    <ChartCard title="Primary Concerns" subtitle="Barriers to adoption" height="auto">
+                        <Stack spacing={2}>
+                            {concernData.map((item, index) => (
+                                <Box key={index} sx={{
+                                    p: 2,
+                                    borderRadius: 3,
+                                    bgcolor: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid',
+                                    borderColor: 'rgba(255,255,255,0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: 2,
+                                    transition: 'all 0.2s',
+                                    '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: theme.palette.primary.main }
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden' }}>
+                                        <Box sx={{
+                                            minWidth: 32, height: 32, borderRadius: '50%',
+                                            bgcolor: index === 0 ? theme.palette.error.main : 'rgba(255,255,255,0.1)',
+                                            color: index === 0 ? 'white' : theme.palette.text.secondary,
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontWeight: 'bold', fontSize: '0.9rem',
+                                            boxShadow: index === 0 ? `0 0 10px ${theme.palette.error.main}80` : 'none'
+                                        }}>
+                                            {index + 1}
+                                        </Box>
+                                        <Typography variant="body1" sx={{
+                                            whiteSpace: 'normal',
+                                            wordBreak: 'break-word',
+                                            maxWidth: '100%',
+                                            fontWeight: 500
+                                        }}>
+                                            {item.name}
+                                        </Typography>
+                                    </Box>
+                                    <Chip
+                                        label={`${item.value} students`}
+                                        size="small"
+                                        variant="outlined"
+                                        sx={{ borderColor: 'rgba(255,255,255,0.2)', color: 'text.secondary' }}
+                                    />
+                                </Box>
+                            ))}
+                        </Stack>
+                    </ChartCard>
+                </Grid>
+
+                {/* 4. Strategic Text */}
+                <Grid item xs={12}>
+                    <ChartCard title="Strategic Takeaway" height="auto">
+                        <Typography variant="body1" paragraph color="text.secondary" sx={{ fontSize: '1.2rem', lineHeight: 1.6 }}>
+                            The data indicates a massive convergence towards <strong style={{ color: theme.palette.primary.main }}>{keymetrics.topTool}</strong>.
+                            However, <strong style={{ color: theme.palette.warning.main }}>{keymetrics.dominantConcern}</strong> remains a significant barrier for {((concernData[0]?.value || 0) / keymetrics.totalStudents * 100).toFixed(0)}% of students.
+                        </Typography>
+                        <Alert
+                            severity="info"
+                            icon={<CheckCircle color={theme.palette.secondary.main} />}
+                            sx={{
+                                borderRadius: 3,
+                                bgcolor: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: 'text.primary',
+                                '& .MuiAlert-message': { width: '100%' }
+                            }}
+                        >
+                            <Typography variant="subtitle1" fontWeight={700} sx={{ color: theme.palette.secondary.main }}>Recommendation</Typography>
+                            <Typography variant="body2">Address {keymetrics.dominantConcern} through targeted workshops and guideline clarification.</Typography>
+                        </Alert>
+                    </ChartCard>
+                </Grid>
+            </Grid>
+        </Box>
     );
 }

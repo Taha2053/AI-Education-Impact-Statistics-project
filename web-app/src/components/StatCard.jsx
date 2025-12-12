@@ -4,130 +4,97 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const MotionPaper = motion(Paper);
-const MotionBox = motion(Box);
 
-export default function StatCard({ title, value, trend, trendValue, icon: Icon, color }) {
+export default function StatCard({ title, value, subtext, trend, trendValue, icon: Icon, color, delay = 0 }) {
     const theme = useTheme();
 
-    // Define icon colors based on title for visual distinction
-    const getIconColor = () => {
-        if (color) return color;
-        switch (title) {
-            case 'Total Students': return '#6366f1';  // Indigo
-            case 'Avg. GPA': return '#10b981';        // Green
-            case 'Avg. AI Usage (Hrs)': return '#8b5cf6';  // Purple
-            case 'Study Hours/Week': return '#f59e0b';     // Amber
-            case 'Most Popular Tool': return '#ec4899';    // Pink
-            default: return theme.palette.primary.main;
-        }
-    };
-
-    const iconColor = getIconColor();
+    const activeColor = color || theme.palette.primary.main;
 
     return (
         <MotionPaper
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: delay, ease: 'backOut' }}
             sx={{
                 p: 3,
                 height: '100%',
                 position: 'relative',
                 overflow: 'hidden',
-                cursor: 'pointer'
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            whileHover={{
-                y: -6,
-                boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
-                transition: { duration: 0.2 }
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: 4,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    borderColor: activeColor,
+                    boxShadow: `0 0 20px -5px ${activeColor}40`,
+                    transform: 'translateY(-5px)',
+                    background: `linear-gradient(180deg, rgba(255,255,255,0.02) 0%, ${activeColor}10 100%)`
+                }
             }}
         >
-            {/* Background Icon */}
-            <MotionBox
-                sx={{ position: 'absolute', right: -20, top: -20, opacity: 0.1, transform: 'rotate(15deg)' }}
-                animate={{
-                    rotate: [15, 20, 15],
-                    scale: [1, 1.05, 1]
-                }}
-                transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: 'easeInOut'
-                }}
-            >
-                {Icon && <Icon size={120} color={iconColor} />}
-            </MotionBox>
+            {/* Background Decor */}
+            <Box sx={{
+                position: 'absolute',
+                top: -30,
+                right: -30,
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${activeColor}40 0%, transparent 70%)`,
+                filter: 'blur(20px)',
+                opacity: 0.5,
+                pointerEvents: 'none'
+            }} />
 
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                <Box>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {title}
+                    </Typography>
+                </Box>
                 {Icon && (
-                    <MotionBox
-                        sx={{
-                            p: 1.5,
-                            borderRadius: 2,
-                            bgcolor: `${iconColor}20`,
-                            mr: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                        whileHover={{
-                            scale: 1.1,
-                            rotate: [0, -5, 5, 0],
-                            transition: { duration: 0.3 }
-                        }}
-                    >
-                        <Icon size={22} color={iconColor} />
-                    </MotionBox>
+                    <Box sx={{
+                        p: 1,
+                        borderRadius: 2,
+                        bgcolor: `${activeColor}20`,
+                        color: activeColor,
+                        boxShadow: `0 0 10px ${activeColor}40`
+                    }}>
+                        <Icon size={20} strokeWidth={2.5} />
+                    </Box>
                 )}
-                <Typography variant="subtitle2" color="text.secondary" fontWeight={600}>
-                    {title}
-                </Typography>
             </Box>
 
-            <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-            >
-                <Typography variant="h3" fontWeight={700} sx={{ mb: 1 }}>
+            <Box>
+                <Typography variant="h3" sx={{
+                    fontWeight: 800,
+                    color: '#fff',
+                    textShadow: `0 0 20px ${activeColor}40`,
+                    mb: 0.5
+                }}>
                     {value}
                 </Typography>
-            </motion.div>
 
-            {trend && (
-                <MotionBox
-                    sx={{ display: 'flex', alignItems: 'center' }}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                    {trend === 'up' ? (
-                        <motion.div
-                            animate={{ y: [0, -2, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                            <TrendingUp size={16} color={theme.palette.success.main} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            animate={{ y: [0, 2, 0] }}
-                            transition={{ duration: 1.5, repeat: Infinity }}
-                        >
-                            <TrendingDown size={16} color={theme.palette.error.main} />
-                        </motion.div>
-                    )}
-                    <Typography
-                        variant="body2"
-                        color={trend === 'up' ? 'success.main' : 'error.main'}
-                        sx={{ ml: 0.5, fontWeight: 600 }}
-                    >
-                        {trendValue}
+                {subtext && (
+                    <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                        {subtext}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                        vs last month
-                    </Typography>
-                </MotionBox>
-            )}
+                )}
+
+                {trend && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                        {trend === 'up' ? <TrendingUp size={14} color={theme.palette.success.main} /> : <TrendingDown size={14} color={theme.palette.error.main} />}
+                        <Typography variant="body2" sx={{ color: trend === 'up' ? 'success.main' : 'error.main', fontWeight: 700 }}>
+                            {trendValue}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">vs last month</Typography>
+                    </Box>
+                )}
+            </Box>
         </MotionPaper>
     );
 }

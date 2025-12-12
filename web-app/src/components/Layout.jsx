@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, useTheme, useMediaQuery } from '@mui/material';
-import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare } from 'lucide-react';
+import { Box, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, useTheme, useMediaQuery, Avatar } from '@mui/material';
+import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const drawerWidth = 280;
@@ -28,96 +28,111 @@ export default function Layout({ children, currentView, onViewChange }) {
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            bgcolor: 'background.paper',
-            borderRight: '1px solid',
-            borderColor: 'divider',
+            bgcolor: 'rgba(10, 10, 20, 0.4)', // Semi-transparent
+            backdropFilter: 'blur(16px)',
+            borderRight: '1px solid rgba(255,255,255,0.05)',
         }}>
             {/* Logo Section */}
-            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ p: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Box sx={{
                     p: 1,
-                    borderRadius: 2,
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    borderRadius: 3,
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    color: '#000',
                     display: 'flex',
-                    boxShadow: '0 4px 12px rgba(150, 111, 255, 0.3)'
+                    boxShadow: `0 0 20px ${theme.palette.primary.main}60`
                 }}>
-                    <BrainCircuit size={24} />
+                    <BrainCircuit size={28} strokeWidth={2.5} />
                 </Box>
                 <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1 }}>
-                        AI Study
+                    <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: '0.02em', color: '#fff' }}>
+                        STATS-<span style={{ color: theme.palette.primary.main }}>AI</span>
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        AI Education Impact Statistics
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontWeight: 600  }}>
+                        Statistical Study: The Impact of AI on Students
                     </Typography>
                 </Box>
             </Box>
 
             {/* Navigation */}
             <List sx={{ px: 2, py: 1, flexGrow: 1 }}>
-                {MENU_ITEMS.map((item) => (
-                    <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-                        <ListItemButton
-                            selected={currentView === item.id}
-                            onClick={() => {
-                                onViewChange(item.id);
-                                if (isMobile) setMobileOpen(false);
-                            }}
-                            sx={{
-                                position: 'relative',
-                                overflow: 'hidden',
-                                '&.Mui-selected': {
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                }
-                            }}
-                        >
-                            <ListItemIcon sx={{ minWidth: 40 }}>
-                                {item.icon}
-                            </ListItemIcon>
-                            <ListItemText
-                                primary={item.text}
-                                primaryTypographyProps={{
-                                    fontWeight: currentView === item.id ? 600 : 500,
-                                    fontSize: '0.95rem'
+                {MENU_ITEMS.map((item) => {
+                    const active = currentView === item.id;
+                    return (
+                        <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                            <ListItemButton
+                                selected={active}
+                                onClick={() => {
+                                    onViewChange(item.id);
+                                    if (isMobile) setMobileOpen(false);
                                 }}
-                            />
-                            {currentView === item.id && (
-                                <motion.div
-                                    layoutId="activeIndicator"
-                                    style={{
-                                        position: 'absolute',
-                                        left: 0,
-                                        top: '10%',
-                                        bottom: '10%',
-                                        width: '3px',
-                                        backgroundColor: theme.palette.primary.main,
-                                        borderTopRightRadius: '4px',
-                                        borderBottomRightRadius: '4px',
+                                sx={{
+                                    borderRadius: 3,
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    transition: 'all 0.3s ease',
+                                    color: active ? '#fff' : 'rgba(255,255,255,0.6)',
+                                    '&.Mui-selected': {
+                                        bgcolor: 'rgba(255,255,255,0.03)',
+                                        '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+                                    },
+                                    '&:hover': {
+                                        bgcolor: 'rgba(255,255,255,0.02)',
+                                        color: '#fff',
+                                        transform: 'translateX(4px)'
+                                    }
+                                }}
+                            >
+                                <ListItemIcon sx={{ minWidth: 44, color: active ? theme.palette.primary.main : 'inherit' }}>
+                                    {item.icon}
+                                </ListItemIcon>
+                                <ListItemText
+                                    primary={item.text}
+                                    primaryTypographyProps={{
+                                        fontWeight: active ? 700 : 500,
+                                        fontSize: '0.95rem',
+                                        letterSpacing: '0.02em'
                                     }}
                                 />
-                            )}
-                        </ListItemButton>
-                    </ListItem>
-                ))}
+                                {active && (
+                                    <motion.div
+                                        layoutId="glow"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        style={{
+                                            position: 'absolute',
+                                            left: 0,
+                                            top: 0,
+                                            bottom: 0,
+                                            right: 0,
+                                            background: `linear-gradient(90deg, ${theme.palette.primary.main}10, transparent)`,
+                                            borderLeft: `4px solid ${theme.palette.primary.main}`,
+                                            pointerEvents: 'none'
+                                        }}
+                                    />
+                                )}
+                            </ListItemButton>
+                        </ListItem>
+                    );
+                })}
             </List>
+
+            
         </Box>
     );
 
     return (
-        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+        <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'transparent' /* Body handles bg */ }}>
             <AppBar
                 position="fixed"
                 sx={{
                     width: { md: `calc(100% - ${drawerWidth}px)` },
                     ml: { md: `${drawerWidth}px` },
-                    bgcolor: 'rgba(23, 23, 23, 0.8)', // Glass effect
-                    backdropFilter: 'blur(12px)',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
+                    bgcolor: 'rgba(3, 0, 20, 0.2)', // Mostly transparent
+                    backdropFilter: 'blur(10px)',
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
                     boxShadow: 'none',
                     zIndex: theme.zIndex.drawer + 1,
-                    transition: 'all 0.3s ease'
                 }}
             >
                 <Toolbar sx={{ justifyContent: 'space-between' }}>
@@ -132,14 +147,15 @@ export default function Layout({ children, currentView, onViewChange }) {
                             <MenuIcon />
                         </IconButton>
 
-                        {/* Breadcrumbs / Title */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                            <LayoutDashboard size={18} />
-                            <ChevronRight size={16} />
-                            <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 600 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: theme.palette.text.secondary }}>
+                            <Zap size={16} color={theme.palette.warning.main} />
+                            <Typography variant="subtitle2" sx={{ color: theme.palette.text.primary, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                                 {MENU_ITEMS.find(item => item.id === currentView)?.text || 'Dashboard'}
                             </Typography>
                         </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                        {/* Add Top Actions here if needed */}
                     </Box>
                 </Toolbar>
             </AppBar>
@@ -155,7 +171,7 @@ export default function Layout({ children, currentView, onViewChange }) {
                     ModalProps={{ keepMounted: true }}
                     sx={{
                         display: { xs: 'block', md: 'none' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none', bgcolor: 'transparent' },
                     }}
                 >
                     {drawer}
@@ -164,7 +180,7 @@ export default function Layout({ children, currentView, onViewChange }) {
                     variant="permanent"
                     sx={{
                         display: { xs: 'none', md: 'block' },
-                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none' },
+                        '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, border: 'none', bgcolor: 'transparent' },
                     }}
                     open
                 >
@@ -176,7 +192,7 @@ export default function Layout({ children, currentView, onViewChange }) {
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: 3,
+                    p: { xs: 2, md: 4 },
                     width: { md: `calc(100% - ${drawerWidth}px)` },
                     mt: 8,
                     minHeight: '100vh',
@@ -186,10 +202,10 @@ export default function Layout({ children, currentView, onViewChange }) {
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={currentView}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, scale: 1.02, filter: 'blur(2px)' }}
+                        transition={{ duration: 0.3, ease: 'circOut' }}
                     >
                         {children}
                     </motion.div>

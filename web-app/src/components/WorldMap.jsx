@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import Plot from 'react-plotly.js';
 import { getCountryCoordinates } from '../utils/dataUtils';
 
@@ -9,27 +9,22 @@ export default function WorldMap({ countrySummaries, selectedCountry, onCountryC
     const mapData = useMemo(() => {
         if (!countrySummaries || countrySummaries.length === 0) return [];
 
-        // Prepare data for each country
         const lats = [];
         const lons = [];
         const texts = [];
         const markers = [];
         const sizes = [];
+        const values = [];
 
         countrySummaries.forEach((country) => {
-            if (country.country === 'Global') return; // Skip global entry
+            if (country.country === 'Global') return;
 
             const coords = getCountryCoordinates(country.country);
             lats.push(coords.lat);
             lons.push(coords.lon);
 
-            // Create hover text
-            const gpaText = country.avg_gpa !== null && !isNaN(country.avg_gpa)
-                ? country.avg_gpa.toFixed(2)
-                : 'N/A';
-            const aiText = country.avg_ai_usage_hours !== null && !isNaN(country.avg_ai_usage_hours)
-                ? country.avg_ai_usage_hours.toFixed(1) + 'h'
-                : 'N/A';
+            const gpaText = country.avg_gpa !== null && !isNaN(country.avg_gpa) ? country.avg_gpa.toFixed(2) : 'N/A';
+            const aiText = country.avg_ai_usage_hours !== null && !isNaN(country.avg_ai_usage_hours) ? country.avg_ai_usage_hours.toFixed(1) + 'h' : 'N/A';
 
             texts.push(
                 `<b>${country.country}</b><br>` +
@@ -39,14 +34,13 @@ export default function WorldMap({ countrySummaries, selectedCountry, onCountryC
             );
 
             markers.push(country.country);
-
-            // Size based on student count (scaled logarithmically for better visualization)
-            sizes.push(Math.log(country.student_count + 1) * 5 + 10);
+            sizes.push(Math.log(country.student_count + 1) * 8 + 10);
+            values.push(country.avg_ai_usage_hours || 0);
         });
 
         return [{
             type: 'scattergeo',
-            mode: 'markers+text',
+            mode: 'markers',
             lat: lats,
             lon: lons,
             text: texts,
@@ -54,80 +48,74 @@ export default function WorldMap({ countrySummaries, selectedCountry, onCountryC
             hovertemplate: '%{text}<extra></extra>',
             marker: {
                 size: sizes,
-                color: countrySummaries
-                    .filter(c => c.country !== 'Global')
-                    .map(c => c.avg_ai_usage_hours || 0),
+                color: values,
                 colorscale: [
-                    [0, '#3b82f6'],
-                    [0.5, '#8b5cf6'],
-                    [1, '#ec4899']
+                    [0, theme.palette.primary.main],
+                    [0.5, theme.palette.secondary.main],
+                    [1, theme.palette.error.main]
                 ],
                 colorbar: {
                     title: 'AI Usage<br>(hrs/week)',
                     thickness: 15,
                     len: 0.5,
                     x: 1.02,
-                    tickfont: { color: 'white' },
-                    titlefont: { color: 'white' }
+                    tickfont: { color: theme.palette.text.secondary },
+                    titlefont: { color: theme.palette.text.secondary },
+                    bgcolor: 'rgba(0,0,0,0)'
                 },
                 line: {
                     width: 2,
-                    color: selectedCountry === 'all' ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.3)'
+                    color: '#fff'
                 },
-                opacity: 0.8
+                opacity: 0.8,
+                symbol: 'circle'
             },
             name: 'Countries',
             customdata: markers,
         }];
-    }, [countrySummaries, selectedCountry]);
+    }, [countrySummaries, selectedCountry, theme]);
 
     return (
-        <Box sx={{ height: 500, width: '100%' }}>
+        <Box sx={{ height: '100%', width: '100%', borderRadius: 4, overflow: 'hidden' }}>
             <Plot
                 data={mapData}
                 layout={{
                     geo: {
                         projection: {
-                            type: 'natural earth'
+                            type: 'natural earth',
+                            scale: 1.15
                         },
-                        bgcolor: 'transparent',
+                        bgcolor: 'rgba(0,0,0,0)',
                         showland: true,
-                        landcolor: 'rgba(50, 50, 50, 0.3)',
+                        landcolor: '#0f172a', // Dark blue-grey
                         showcountries: true,
-                        countrycolor: 'rgba(100, 100, 100, 0.2)',
-                        showocean: true,
-                        oceancolor: 'rgba(20, 20, 40, 0.5)',
-                        showlakes: true,
-                        lakecolor: 'rgba(20, 20, 40, 0.5)',
-                        coastlinecolor: 'rgba(150, 150, 150, 0.3)',
-                        lataxis: {
-                            range: [-60, 80]
-                        },
-                        lonaxis: {
-                            range: [-180, 180]
-                        }
+                        countrycolor: '#1e293b', // Slightly lighter border
+                        showocean: false,
+                        showframe: false,
+                        showcoastlines: true,
+                        coastlinecolor: '#1e293b',
+                        center: { lat: 20, lon: 0 },
                     },
-                    paper_bgcolor: 'transparent',
-                    plot_bgcolor: 'transparent',
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
                     showlegend: false,
                     margin: { t: 0, r: 0, l: 0, b: 0 },
                     font: {
-                        color: 'white',
+                        color: theme.palette.text.primary,
                         family: 'Inter, sans-serif'
                     },
                     autosize: true,
-                    height: 500
                 }}
                 config={{
                     displayModeBar: false,
-                    responsive: true
+                    responsive: true,
+                    scrollZoom: true
                 }}
                 style={{ width: '100%', height: '100%' }}
                 onClick={(event) => {
                     if (event.points && event.points[0] && event.points[0].customdata) {
-                        const country = event.points[0].customdata;
                         if (onCountryClick) {
-                            onCountryClick(country);
+                            onCountryClick(event.points[0].customdata);
                         }
                     }
                 }}
