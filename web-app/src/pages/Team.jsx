@@ -22,7 +22,7 @@ const teamMembersData = [
   { id: 6, name: 'Aissa Rayhane', image: '/team/member6.jpg' },
   { id: 7, name: 'Kammoun Rami', image: '/team/member7.jpg' },
   { id: 8, name: 'Jarraya Ahmed', image: '/team/member8.jpg' },
-  { id: 9, name: 'Selim Najjar', image: '/team/member9.jpg' },
+  { id: 9, name: 'Najjar Selim', image: '/team/member9.jpg' },
   { id: 10, name: 'Belghith Farah', image: '/team/member10.jpg' },
   { id: 11, name: 'Darchem Zaineb', image: '/team/member11.jpg' },
   { id: 12, name: 'Barhoumi Aziz', image: '/team/member12.jpg' },
