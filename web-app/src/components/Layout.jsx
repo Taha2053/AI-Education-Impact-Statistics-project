@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Drawer, AppBar, Toolbar, Typography, List, ListItem, ListItemButton, ListItemIcon, ListItemText, IconButton, useTheme, useMediaQuery, Avatar } from '@mui/material';
-import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare, Zap } from 'lucide-react';
+import { Menu as MenuIcon, LayoutDashboard, Globe, BarChart2, BookOpen, BrainCircuit, ChevronRight, MessageSquare, Zap, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const drawerWidth = 280;
@@ -12,6 +12,7 @@ const MENU_ITEMS = [
     { text: 'Study Habits', icon: <BookOpen size={20} />, id: 'habits' },
     { text: 'AI Insights', icon: <BrainCircuit size={20} />, id: 'ai' },
     { text: 'Assistance', icon: <MessageSquare size={20} />, id: 'assistance' },
+    { text: 'Team', icon: <Users size={20} />, id: 'team' },
 ];
 
 export default function Layout({ children, currentView, onViewChange }) {
