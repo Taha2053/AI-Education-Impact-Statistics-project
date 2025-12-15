@@ -17,14 +17,14 @@ const teamMembersData = [
   { id: 2, name: 'Rachdi Malek', image: '/team/member5.jpg', position: 'LB' },
   { id: 3, name: 'Najjar Selim', image: '/team/member9.jpg', position: 'CB1' },
   { id: 4, name: 'Teyeb Yossri', image: '/team/member3.jpg', position: 'CB2' },
-  { id: 5, name: 'Belghith Farah', image: '/team/member10.jpg', position: 'RB' },
+  { id: 5, name: 'Belghith Farah', image: '/team/membre10.png', position: 'RB' },
   { id: 6, name: 'Aissa Rayhane', image: '/team/member6.jpg', position: 'CDM' },
   { id: 7, name: 'Khalfallah Almouthana Taha', image: '/team/member2.jpg', position: 'CM1' },
   { id: 8, name: 'Dhrif Eya', image: '/team/member1.jpg', position: 'CM2' },
   { id: 9, name: 'Kammoun Rami', image: '/team/member7.jpg', position: 'LW' },
   { id: 10, name: 'Barhoumi Aziz', image: '/team/member12.jpg', position: 'ST' },
   { id: 11, name: 'Moueddeb Salma', image: '/team/member4.jpg', position: 'RW' },
-  { id: 12, name: 'Darchem Zaineb', image: '/team/member11.jpg', position: 'COACH' },
+  { id: 12, name: 'Darchem Zaineb', image: '/team/membre11.jpeg', position: 'COACH' },
 ];
 
 // Football positions mapping (4-3-3 formation)

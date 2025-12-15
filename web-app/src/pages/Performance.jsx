@@ -211,7 +211,7 @@ export default function Performance() {
           </ChartCard>
         </Grid>
         <Grid item xs={12} md={7}>
-          <ChartCard title="Detailed Distribution" subtitle={`Scatter plot of ${filteredStudents.length} Students`}>
+          <ChartCard title="AI Usage vs GPA" subtitle={`Scatter plot of ${filteredStudents.length} Students`}>
             <Box sx={{ flex: 1, overflow: 'hidden', height: 400 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
